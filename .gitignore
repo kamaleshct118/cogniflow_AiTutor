@@ -1,0 +1,109 @@
+# ─────────────────────────────────────────────────────────────
+# Syntapse Chamber — Root .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# ── CRITICAL: Secrets & API Keys ──────────────────────────
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# ── Python Bytecode & Cache ───────────────────────────────
+__pycache__/
+backend/__pycache__/
+backend/cognitive/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pycache
+
+# ── Python Virtual Environments ───────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.Python
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# ── Node / Frontend ───────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/.cache/
+node_modules/
+
+# ── Frontend Build Artifacts ──────────────────────────────
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# ── LangGraph / LangChain State ───────────────────────────
+*.checkpoints/
+.langgraph_api/
+backend/.langgraph_checkpoint*
+langgraph_checkpoint*
+
+# ── Testing & Coverage ────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+coverage/
+*.coveragerc
+
+# ── IDE / Editor ──────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.suo
+*.user
+
+# ── OS Generated Files ────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Logs ──────────────────────────────────────────────────
+*.log
+logs/
+backend/logs/
+uvicorn*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Database & Persistence Files ─────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+backend/*.db-*
+
+# ── Temporary & Scratch Files ─────────────────────────────
+*.bak
+*.tmp
+*.temp
+*.orig
+*.rej
+test_chamber/*.tmp
+scratch/
+.scratch/
