@@ -1,3 +1,19 @@
+"""
+===============================================================================
+ SYNAPSE COGNITIVE ENGINE — Pydantic Data Contracts (profile_schema.py)
+===============================================================================
+ Purpose:
+   • Defines strict Pydantic structures for cognitive events, pedagogical signals,
+     hypothesis states, and probe validation payloads.
+
+ Core Logic & Hierarchy:
+   ├── PedagogicalSignal          : Agent 3A evaluation signal (response quality & hypothesis effect)
+   ├── CognitiveValidationPayload : Contract returned by Agent 3A to update state
+   ├── CognitiveEvent            : Immutable audit record stored in cognitive_events state list
+   └── HypothesisState           : Bayesian hypothesis state tracking support & contradiction weights
+===============================================================================
+"""
+
 from datetime import datetime
 from typing import Literal, Optional, List
 from pydantic import BaseModel, Field

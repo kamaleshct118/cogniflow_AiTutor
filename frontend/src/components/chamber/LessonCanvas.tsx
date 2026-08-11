@@ -54,7 +54,7 @@ export default function LessonCanvas() {
               style={{
                 background: 'var(--surface-1)',
                 borderColor: 'var(--surface-border)',
-                borderWidth: '2px',
+                borderWidth: '1px',
               }}
             >
               <BookOpen className="w-7 h-7 text-amber-c" />

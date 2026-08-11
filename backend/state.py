@@ -1,3 +1,21 @@
+"""
+===============================================================================
+ SYNAPSE BACKEND — LangGraph Shared State Blackboard (state.py)
+===============================================================================
+ Purpose:
+   • Defines SyntapseChamberState schema and annotated list reducers for
+     thread-safe multi-agent state management.
+
+ Core Logic & Hierarchy:
+   ├── messages          : Annotated[list, add_messages] (Append-only conversation history)
+   ├── research_catalog  : Annotated[list, append_research] (Background web facts)
+   ├── teacher_memory    : Annotated[list, append_research] (1KB ghost explanation records)
+   ├── cognitive_events  : Annotated[list, append_research] (Immutable probe audit trail)
+   ├── cognitive_profile : Bayesian confidence weights dictionary
+   └── Orchestration Flags: Routing booleans (requires_deep_research, is_off_topic, etc.)
+===============================================================================
+"""
+
 from typing import TypedDict, Annotated, List, Dict, Any, Optional
 from langgraph.graph.message import add_messages
 from schemas import CognitiveProfilePayload, ScopeSizerPayload, ResearchPayload, TeacherProbe

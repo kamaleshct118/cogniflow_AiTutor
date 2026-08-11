@@ -1,3 +1,20 @@
+"""
+===============================================================================
+ SYNAPSE BACKEND — Agent Node Implementations (nodes.py)
+===============================================================================
+ Purpose:
+   • Implements execution logic for each specialized agent in the LangGraph graph.
+
+ Core Logic & Hierarchy:
+   ├── cognitive_validator_node (Agent 3A) : Probe answer grading & Bayesian weight updates
+   ├── guardrail_node           (Agent 5)  : Chamber topic safety & intent classification
+   ├── wavelength_setter_node   (Agent 2)  : Zoom scope selection & Tavily search query writing
+   ├── research_node            (Agent 6)  : Tavily API execution & fact catalog population
+   ├── teacher_node             (Agent 4)  : Socratic response synthesis & probe generation
+   ├── memory_compressor_node   (Utility)  : 1KB ghost record compression & SQLite checkpointer
+   └── gap_analyzer_node        (Agent 3B) : Historical path analysis & 1-click diagnostic cards
+===============================================================================
+"""
 import json
 import logging
 from typing import Dict, Any

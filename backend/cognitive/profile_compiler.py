@@ -1,3 +1,18 @@
+"""
+===============================================================================
+ SYNAPSE COGNITIVE ENGINE — Profile Compiler (profile_compiler.py)
+===============================================================================
+ Purpose:
+   • Compiles raw Cognitive Profile output from Agent 1 (Mapper) into active
+     Bayesian hypotheses with initial teaching policies.
+
+ Core Logic & Hierarchy:
+   ├── generate_h_id()       : Generates deterministic SHA-256 hypothesis IDs (H_CAUSAL_xxx)
+   ├── compile_raw_profile() : Translates epistemic signature into active_hypotheses
+   └── Initial Confidence    : Seeds initial baseline confidence (0.50) for Agent 3A evaluation
+===============================================================================
+"""
+
 import hashlib
 from typing import Dict, Any
 

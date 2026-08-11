@@ -118,7 +118,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             ? 'var(--surface-2)'
             : 'var(--surface-1)',
           borderColor: 'var(--surface-border)',
-          borderWidth: '2px',
+          borderWidth: '1px',
         }}
       >
         <div className="flex items-center gap-2 mb-1.5">
@@ -228,7 +228,7 @@ export default function ChatTerminal() {
                 style={{
                   background: 'var(--surface-1)',
                   borderColor: 'var(--surface-border)',
-                  borderWidth: '2px',
+                  borderWidth: '1px',
                 }}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -288,7 +288,7 @@ export default function ChatTerminal() {
           style={{
             background: 'var(--surface-1)',
             borderColor: 'var(--surface-border)',
-            borderWidth: '2px',
+            borderWidth: '1px',
           }}
         >
           <span className="text-amber-c font-mono text-base font-bold pb-1">{'>'}</span>

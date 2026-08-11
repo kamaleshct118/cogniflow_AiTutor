@@ -1,3 +1,19 @@
+/**
+ * ===============================================================================
+ * SYNAPSE FRONTEND — Backend API Client (api.ts)
+ * ===============================================================================
+ * Purpose:
+ *   • HTTP client interface performing REST API calls to the FastAPI backend.
+ *
+ * Core Logic & Hierarchy:
+ *   ├── calibrateUser()         : POST /calibrate (Agent 1 onboarding calibration)
+ *   ├── fetchCognitiveProfile() : GET /calibrate (Restores profile from disk)
+ *   ├── startSession()          : POST /session/start (Seeds chamber state in graph)
+ *   ├── sendChatMessage()       : POST /chat (Drives chat turn through LangGraph)
+ *   └── fetchGapAnalysis()      : POST /gap_analysis (Agent 3B diagnostic cards)
+ * ===============================================================================
+ */
+
 import type {
   CognitiveProfile,
   Chamber,
@@ -79,6 +95,31 @@ export async function calibrate(modalText: string): Promise<CognitiveProfile> {
       structural_depth: 'deep',
       created_at: new Date().toISOString(),
     };
+  }
+}
+
+export async function fetchCognitiveProfile(): Promise<CognitiveProfile | null> {
+  try {
+    const response = await fetch(`${API_BASE}/calibrate`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const rawProfile = data.cognitive_profile;
+    if (!rawProfile) return null;
+
+    return {
+      ...rawProfile,
+      id: rawProfile.id || rid(),
+      modal_text: rawProfile.modal_text || '',
+      causal_strategy: rawProfile.causal_strategy || 'analogical',
+      pacing: rawProfile.pacing || 'moderate',
+      complexity: rawProfile.complexity || 'intermediate',
+      analogy_style: rawProfile.analogy_style || 'structural',
+      structural_depth: rawProfile.structural_depth || 'deep',
+      created_at: rawProfile.created_at || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.warn('Backend GET /calibrate error:', error);
+    return null;
   }
 }
 

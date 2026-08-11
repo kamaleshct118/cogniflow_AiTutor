@@ -60,7 +60,7 @@ export default function SessionHistoryList() {
               borderColor: isActive
                 ? 'var(--accent-amber)'
                 : 'var(--surface-border)',
-              borderWidth: isActive ? '2px' : '1px',
+              borderWidth: '1px',
             }}
           >
             <div className="flex items-start gap-2">
@@ -93,7 +93,7 @@ export default function SessionHistoryList() {
             </div>
             
             <button
-              className="absolute top-2.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-muted-c hover:text-red-500 rounded-md hover:bg-black/5 dark:hover:bg-white/5"
+              className="absolute top-2.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-muted-c hover:text-red-500 rounded-md hover:bg-[var(--surface-2)]"
               title="Delete Chamber"
               onClick={(e) => {
                 e.stopPropagation();

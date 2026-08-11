@@ -10,6 +10,7 @@ backend/.env
 frontend/.env
 frontend/.env.local
 frontend/.env.production
+cognitive_profile.json
 
 # ── Python Bytecode & Cache ───────────────────────────────
 __pycache__/

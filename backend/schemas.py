@@ -1,3 +1,22 @@
+"""
+===============================================================================
+ SYNAPSE BACKEND — Pydantic Data Contracts & Schemas (schemas.py)
+===============================================================================
+ Purpose:
+   • Defines strict Pydantic structures for LLM structured output parsing
+     and API request/response contracts across all agents.
+
+ Core Logic & Hierarchy:
+   ├── Agent 1 (Mapper)      : CognitiveProfilePayload, EpistemicSignature
+   ├── Agent 3A (Validator)  : SocraticQuestion, TeacherProbe
+   ├── Agent 5 (Guardrail)   : GuardrailDecision (Intent & research boolean flags)
+   ├── Agent 2 (Wavelength)  : ScopeSizerPayload, SearchQuery (Tavily query contract)
+   ├── Agent 6 (Researcher)  : ResearchPayload, SourceSupportedFact
+   ├── Agent 4 (Teacher)     : TeacherResponsePayload (Socratic explanation)
+   └── Agent 3B (Gap Analyzer): KnowledgeGapAnalysis, GapSuggestion cards
+===============================================================================
+"""
+
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 

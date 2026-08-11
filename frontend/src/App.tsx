@@ -1,3 +1,22 @@
+/**
+ * ===============================================================================
+ * SYNAPSE FRONTEND — Master Application Shell (App.tsx)
+ * ===============================================================================
+ * Purpose:
+ *   • Main UI layout controller managing view transitions, global state hydration,
+ *     theme toggles, and modal rendering.
+ *
+ * Core Logic & Hierarchy:
+ *   ├── Three.js Background   : NeuralBackground interactive Canvas
+ *   ├── Navigation Header     : Theme toggles, Cognitive DNA pill, Focus mode switch
+ *   ├── View Switcher         :
+ *   │     ├── CALIBRATION     : CalibrationGate (Agent 1 onboarding essay)
+ *   │     ├── DASHBOARD       : ChamberDashboard (Chamber creation & selection)
+ *   │     └── CHAMBER_IDE     : ActiveChamberIDE (Interactive learning chamber)
+ *   └── Global Modals         : CognitiveModal (DNA view & profile inspection)
+ * ===============================================================================
+ */
+
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Dna, Sun, Moon, FlaskConical, Zap } from 'lucide-react';

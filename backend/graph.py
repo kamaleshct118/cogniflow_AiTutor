@@ -1,3 +1,25 @@
+"""
+===============================================================================
+ SYNAPSE BACKEND — Master LangGraph Topology & Routing (graph.py)
+===============================================================================
+ Purpose:
+   • Defines the master state graph connecting all 8 specialized agents and
+     utility nodes with deterministic conditional routing.
+
+ Core Logic & Hierarchy:
+   ├── START ──► Agent 3A (Validator) ──► Agent 5 (Scope Guardrail)
+   ├── Guardrail Router (route_from_guardrail):
+   │     ├── trigger_gap_analysis == True ──► Agent 3B (Gap Analyzer) ──► END
+   │     ├── is_off_topic == True         ──► Agent 4 (Teacher Alert) ──► END
+   │     ├── requires_deep_research == True ──► Agent 2 (Wavelength Setter)
+   │     └── Default / Fast Path           ──► Agent 4 (Mentality Teacher)
+   ├── Agent 2 ──► Agent 6 (Researcher) ──► Agent 4 (Mentality Teacher)
+   └── Teacher Router (route_from_teacher):
+         ├── Fallback Research Needed (Max 2) ──► Loop to Agent 2
+         └── Finalized Response              ──► Memory Compressor ──► END
+===============================================================================
+"""
+
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3

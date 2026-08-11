@@ -1,3 +1,18 @@
+"""
+===============================================================================
+ SYNAPSE BACKEND — Environment Configuration & API Keys (config.py)
+===============================================================================
+ Purpose:
+   • Loads environment variables, manages Round-Robin rotation for Tavily search keys,
+     and defines per-agent model configurations across Groq and NVIDIA NIM.
+
+ Core Logic & Hierarchy:
+   ├── Tavily Key Rotation  : get_next_tavily_key() (Round-robin sequence to avoid 429s)
+   ├── Model Assignments    : MODEL_1 to MODEL_6 API keys & model endpoints
+   └── Diagnostics Helper   : print_model_diagnostics() clean logger utility
+===============================================================================
+"""
+
 import os
 import itertools
 import logging

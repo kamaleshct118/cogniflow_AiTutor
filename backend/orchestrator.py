@@ -1,3 +1,19 @@
+"""
+===============================================================================
+ SYNAPSE BACKEND — Calibration Orchestrator (orchestrator.py)
+===============================================================================
+ Purpose:
+   • Manages Agent 1 (Mapper) onboarding calibration execution outside the active
+     chat graph to extract the baseline Cognitive Profile.
+
+ Core Logic & Hierarchy:
+   ├── live_agent_1_mapper : Accepts user writing essay sample
+   ├── Skill Prompt Load   : Loads Agent 1 master directives from prompt_skills/
+   ├── Epistemic Extraction: Calls Groq API to extract reasoning style & friction points
+   └── Persist Footprint   : Saves baseline cognitive_profile.json to disk & state
+===============================================================================
+"""
+
 import os
 import time
 import json

@@ -1,3 +1,20 @@
+/**
+ * ===============================================================================
+ * SYNAPSE FRONTEND — Zustand Global Store (useSyntapseStore.ts)
+ * ===============================================================================
+ * Purpose:
+ *   • Central state management store handling chamber lifecycle, chat history,
+ *     cognitive profile synchronization, and UI drawer states.
+ *
+ * Core Logic & Hierarchy:
+ *   ├── View & Theme State   : currentView, theme, isFocusMode, isGapDrawerOpen
+ *   ├── Session & Profile    : activeSessionId, cognitiveProfile, isCalibrated
+ *   ├── Chamber Lifecycle    : createChamber(), selectChamber(), hydrateChamber()
+ *   ├── Active Learning Loop : sendMessage(), triggerGapAnalysis(), answerProbe()
+ *   └── Backend Sync         : Interacts with API service to persist state across reloads
+ * ===============================================================================
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
@@ -197,6 +214,14 @@ export const useSyntapseStore = create<SyntapseStore>()(
       loadChambers: async () => {
         const chambers = await api.fetchChambers();
         set({ sessionsList: chambers });
+
+        // Hydrate persistent Cognitive Profile from backend if not currently set in store
+        if (!get().cognitiveProfile) {
+          const backendProfile = await api.fetchCognitiveProfile();
+          if (backendProfile) {
+            set({ cognitiveProfile: backendProfile });
+          }
+        }
       },
 
       deleteChamber: async (chamberId) => {

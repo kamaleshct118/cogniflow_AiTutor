@@ -57,7 +57,7 @@ export default function RoomInitializer() {
         style={{
           background: 'var(--surface-1)',
           borderColor: 'var(--surface-border)',
-          borderWidth: '2px',
+          borderWidth: '1px',
         }}
       >
         <label className="flex items-center gap-2 text-sm font-semibold mb-2 text-primary-c font-serif">
@@ -82,7 +82,7 @@ export default function RoomInitializer() {
         style={{
           background: 'var(--surface-1)',
           borderColor: 'var(--surface-border)',
-          borderWidth: '2px',
+          borderWidth: '1px',
         }}
       >
         <label className="flex items-center gap-2 text-sm font-semibold mb-2 text-primary-c font-serif">
@@ -162,7 +162,7 @@ export default function RoomInitializer() {
               style={{
                 background: 'var(--surface-1)',
                 borderColor: 'var(--surface-border)',
-                borderWidth: '2px',
+                borderWidth: '1px',
               }}
             >
               {/* Animated Orbit around 3D Loader */}

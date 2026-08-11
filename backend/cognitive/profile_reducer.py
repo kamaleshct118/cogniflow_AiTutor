@@ -1,3 +1,18 @@
+"""
+===============================================================================
+ SYNAPSE COGNITIVE ENGINE — Bayesian Profile Reducer (profile_reducer.py)
+===============================================================================
+ Purpose:
+   • Mathematical engine implementing Bayesian weight updates based on
+     Socratic Probe evidence evaluation.
+
+ Core Logic & Hierarchy:
+   ├── apply_event_to_profile() : Updates hypothesis confidence weights
+   ├── Confidence Formula      : Confidence = Support / (Support + Contradiction + 1.0)
+   └── Weight Promotion Rule   : Promotes hypothesis to preferred_representation when >=3.0
+===============================================================================
+"""
+
 from typing import Dict, Any
 from .profile_schema import CognitiveEvent, HypothesisState
 

@@ -1,3 +1,21 @@
+"""
+===============================================================================
+ SYNAPSE BACKEND — FastAPI API Entry Point (main.py)
+===============================================================================
+ Purpose:
+   • Exposes REST API endpoints for chamber initialization, active chat loops,
+     cognitive profile calibration, and manual knowledge gap analysis.
+
+ Core Logic & Hierarchy:
+   ├── GET  /health            : Health check status
+   ├── POST /calibrate         : Calibrates Cognitive Profile via Agent 1 (Mapper)
+   ├── GET  /calibrate         : Retrieves persistent Cognitive Profile from disk
+   ├── POST /session/start     : Seeding state & initializing session in LangGraph
+   ├── POST /chat              : Driving chat turn through LangGraph multi-agent pipeline
+   └── POST /gap_analysis      : Triggering Agent 3B diagnostic cards on demand
+===============================================================================
+"""
+
 import os
 import json
 import logging
@@ -11,6 +29,7 @@ from typing import Optional, Dict, Any, List
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from graph import syntapse_app
 from orchestrator import live_agent_1_mapper
+from cognitive.profile_compiler import compile_raw_profile
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -85,7 +104,37 @@ async def health_check():
     """
     return HealthResponse(status="online", version="1.0.0")
 
+# --- Disk Persistence Helpers for Cognitive Profile ---
+PROFILE_FILE_PATH = os.path.join(os.path.dirname(__file__), "cognitive_profile.json")
+
+def load_persisted_profile() -> Optional[Dict[str, Any]]:
+    if os.path.exists(PROFILE_FILE_PATH):
+        try:
+            with open(PROFILE_FILE_PATH, "r", encoding="utf-8") as f:
+                profile = json.load(f)
+                logger.info(f"Loaded persistent Cognitive Profile from {PROFILE_FILE_PATH}")
+                return profile
+        except Exception as e:
+            logger.error(f"Error reading persistent profile file: {e}")
+    return None
+
+def save_persisted_profile(profile: Dict[str, Any]):
+    try:
+        with open(PROFILE_FILE_PATH, "w", encoding="utf-8") as f:
+            json.dump(profile, f, indent=2)
+        logger.info(f"Saved Cognitive Profile to {PROFILE_FILE_PATH}")
+    except Exception as e:
+        logger.error(f"Failed to save profile to disk: {e}")
+
 # --- Pre-Chamber Endpoints ---
+
+@app.get("/calibrate")
+async def get_cognitive_profile():
+    """
+    Retrieves the persisted cognitive profile from disk if present.
+    """
+    profile = load_persisted_profile()
+    return {"status": "success", "cognitive_profile": profile}
 
 @app.post("/calibrate", response_model=CalibrationResponse)
 async def calibrate_user(request: CalibrationRequest):
@@ -99,7 +148,8 @@ async def calibrate_user(request: CalibrationRequest):
     print("="*60)
     try:
         profile = await run_in_threadpool(live_agent_1_mapper, request.modal_text)
-        print(" 🗺️  [AGENT 1 - MAPPER] Full Extracted Cognitive Profile JSON:")
+        save_persisted_profile(profile)
+        print(" 🗺️  [AGENT 1 - MAPPER] Full Extracted Cognitive Profile JSON (Saved to Disk):")
         print(json.dumps(profile, indent=2))
         print("="*60 + "\n")
         return CalibrationResponse(status="success", cognitive_profile=profile)
@@ -114,6 +164,12 @@ async def delete_cognitive_profile():
     """
     print("\n" + "="*60)
     print(" 🗑️  [DELETE /calibrate] Cognitive Footprint Profile Reset Requested")
+    if os.path.exists(PROFILE_FILE_PATH):
+        try:
+            os.remove(PROFILE_FILE_PATH)
+            print("   ✅ Removed cognitive_profile.json from disk")
+        except Exception as e:
+            logger.error(f"Error deleting profile file: {e}")
     print("="*60 + "\n")
     return {"status": "success", "message": "Cognitive profile deleted successfully."}
 
@@ -126,10 +182,14 @@ async def start_session(request: SessionStartRequest):
     print("\n" + "="*60)
     print(f" 🚀 [POST /session/start] Initializing Chamber Session: {request.session_id}")
     print(f" 📌 Topic: \"{request.topic_name}\"")
-    if request.cognitive_profile:
-        import json
-        print(" 🧠 [FRONTEND HYDRATION] Received persistent Cognitive Profile from client:")
-        print(json.dumps(request.cognitive_profile, indent=2))
+    
+    effective_profile = request.cognitive_profile or load_persisted_profile() or {}
+    compiled_data = compile_raw_profile(effective_profile) if effective_profile else {}
+    active_hypotheses = compiled_data.get("active_hypotheses", {}) if isinstance(compiled_data, dict) else {}
+    
+    if effective_profile:
+        print(" 🧠 [PROFILE HYDRATION] Active Cognitive Profile Loaded")
+        print(f" 🎯 [HYPOTHESIS SEEDING] Seeded {len(active_hypotheses)} Active Hypotheses: {list(active_hypotheses.keys())}")
     print("="*60 + "\n")
     config = {"configurable": {"thread_id": request.session_id}}
     
@@ -137,7 +197,7 @@ async def start_session(request: SessionStartRequest):
         "session_id": request.session_id,
         "turn_id": 1,
         "request_id": "REQ_INIT",
-        "cognitive_profile": request.cognitive_profile,
+        "cognitive_profile": effective_profile,
         "topic_name": request.topic_name,
         "user_topic_context": request.user_context,  # Stored as first-class field, not a SystemMessage
         "messages": [],
@@ -149,7 +209,7 @@ async def start_session(request: SessionStartRequest):
         "trigger_gap_analysis": False,
         "is_off_topic": False,
         "search_plan": None,
-        "active_cognitive_hypotheses": {},
+        "active_cognitive_hypotheses": active_hypotheses,
         "last_teacher_probe": None,
         "cognitive_events": [],
         "last_validation": None

@@ -1,3 +1,19 @@
+/**
+ * ===============================================================================
+ * SYNAPSE FRONTEND — Active Chamber IDE View (ActiveChamberIDE.tsx)
+ * ===============================================================================
+ * Purpose:
+ *   • Main workspace component featuring chat stream, Socratic probe input,
+ *     research catalog viewer, and Agent 3B Gap Analysis drawer.
+ *
+ * Core Logic & Hierarchy:
+ *   ├── Chamber Header        : Topic title, active research badge, session ID
+ *   ├── Chat Message Stream   : Rendered markdown teacher explanations & probes
+ *   ├── Floating Action (FAB) : Gap Analysis button triggering Agent 3B drawer
+ *   └── Side Drawers          : Gap Analysis Diagnostic Drawer & Research Catalog
+ * ===============================================================================
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSpring, animated } from '@react-spring/web';
@@ -60,57 +76,64 @@ export default function ActiveChamberIDE() {
     <div className="h-screen flex flex-col">
       {/* Chamber Header — matches wireframe */}
       <header
-        className="flex items-center gap-3 px-5 py-3 border-b"
+        className="h-16 flex-shrink-0 z-30 flex items-center justify-between gap-3 px-5 py-3 border-b min-w-0"
         style={{
           background: 'var(--header-bg)',
           backdropFilter: 'blur(8px)',
           borderColor: 'var(--surface-border)',
         }}
       >
-        <button
-          onClick={() => setView('dashboard')}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-sm text-secondary-c"
-          style={{ background: 'transparent' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Chambers</span>
-        </button>
+        {/* Left Section: Back Button + Topic Title */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
+          <button
+            onClick={() => setView('dashboard')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-sm text-secondary-c flex-shrink-0 whitespace-nowrap"
+            style={{ background: 'transparent' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Chambers</span>
+          </button>
 
-        <div className="h-5 w-px" style={{ background: 'var(--surface-border)' }} />
+          <div className="h-5 w-px flex-shrink-0" style={{ background: 'var(--surface-border)' }} />
 
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-c" />
-          <h1 className="font-serif text-lg font-bold truncate max-w-[200px] sm:max-w-none text-primary-c">
-            Cogniflow // {topicName}
-          </h1>
+          <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+            <Zap className="w-4 h-4 text-amber-c flex-shrink-0" />
+            <h1
+              className="font-serif text-sm sm:text-base md:text-lg font-bold truncate text-primary-c min-w-0"
+              title={`Cogniflow // ${topicName}`}
+            >
+              Cogniflow // {topicName}
+            </h1>
+          </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* Right Section: Badges & Control Buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0 whitespace-nowrap ml-auto">
           <span
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border text-primary-c"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border text-primary-c whitespace-nowrap flex-shrink-0"
             style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
           >
-            <Layers className="w-3 h-3 text-amber-c" />
+            <Layers className="w-3 h-3 text-amber-c flex-shrink-0" />
             Depth: {explanationDepth || 'Deep'}
           </span>
           <span
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border text-primary-c"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border text-primary-c whitespace-nowrap flex-shrink-0"
             style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
           >
-            <Activity className="w-3 h-3 text-mint-c" />
+            <Activity className="w-3 h-3 text-mint-c flex-shrink-0" />
             Agent: Active
           </span>
           <span
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-medium border text-primary-c ml-2"
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-medium border text-primary-c whitespace-nowrap flex-shrink-0"
             style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
           >
             [ {buildDnaTag(cognitiveProfile)} ]
           </span>
           <button
             onClick={toggleFocusMode}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-xs font-semibold text-primary-c"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-xs font-semibold text-primary-c whitespace-nowrap flex-shrink-0"
             style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
             title="Toggle Focus Mode (Cmd/Ctrl+B)"
           >
@@ -122,25 +145,25 @@ export default function ActiveChamberIDE() {
           </button>
           <button
             onClick={handleDownloadPDF}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-semibold text-primary-c border ml-1"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-semibold text-primary-c border whitespace-nowrap flex-shrink-0"
             style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
             title="Download Session as PDF"
           >
-            <Download className="w-3.5 h-3.5 text-mint-c" />
+            <Download className="w-3.5 h-3.5 text-mint-c flex-shrink-0" />
             <span className="hidden md:inline">Export PDF</span>
           </button>
           <button
             onClick={() => toggleCognitiveModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-semibold text-primary-c border ml-1"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-semibold text-primary-c border whitespace-nowrap flex-shrink-0"
             style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
             title="Cognitive Footprint Settings"
           >
-            <Dna className="w-3.5 h-3.5 text-amber-c" />
+            <Dna className="w-3.5 h-3.5 text-amber-c flex-shrink-0" />
             <span className="hidden md:inline">Footprint</span>
           </button>
           <button
             onClick={(e) => toggleTheme(e)}
-            className="p-1.5 rounded-lg border transition-colors ml-1"
+            className="p-1.5 rounded-lg border transition-colors text-primary-c flex-shrink-0"
             style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
             title="Toggle theme"
           >
