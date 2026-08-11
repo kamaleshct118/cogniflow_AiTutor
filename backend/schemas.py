@@ -187,25 +187,112 @@ class KnowledgeOrganization(BaseModel):
     dominant_pattern: str
     supporting_evidence_ids: List[str]
 
-class CognitiveDna(BaseModel):
-    evidence_ledger: List[EvidenceLedgerItem]
-    atomic_evidence_map: AtomicEvidenceMap
-    epistemic_signature: EpistemicSignature
-    knowledge_organization: KnowledgeOrganization
+# ============================================================
+# NEW: MIND BLUEPRINT SCHEMAS (v10)
+# ============================================================
+
+class LearningMechanism(BaseModel):
+    input_processing_style: Dict[str, Any] = Field(default_factory=dict)
+    concept_anchoring: Dict[str, Any] = Field(default_factory=dict)
+    information_integration: Dict[str, Any] = Field(default_factory=dict)
+
+class ReasoningStyle(BaseModel):
+    primary_mode: Dict[str, Any] = Field(default_factory=dict)
+    directionality: Dict[str, Any] = Field(default_factory=dict)
+    hypothesis_handling: Dict[str, Any] = Field(default_factory=dict)
+
+class ErrorRecovery(BaseModel):
+    self_correction: Dict[str, Any] = Field(default_factory=dict)
+    confusion_handling: Dict[str, Any] = Field(default_factory=dict)
+    feedback_sensitivity: Dict[str, Any] = Field(default_factory=dict)
+
+class Metacognition(BaseModel):
+    confidence_calibration: Dict[str, Any] = Field(default_factory=dict)
+    uncertainty_expression: Dict[str, Any] = Field(default_factory=dict)
+    self_assessment: Dict[str, Any] = Field(default_factory=dict)
+
+class TransferReadiness(BaseModel):
+    abstraction_extraction: Dict[str, Any] = Field(default_factory=dict)
+    analogical_bridging: Dict[str, Any] = Field(default_factory=dict)
+    cross_domain_application: Dict[str, Any] = Field(default_factory=dict)
+
+class MentalBlueprint(BaseModel):
+    primary_entry_point: str = ""
+    cognitive_sequence: str = ""
+    bottleneck: str = ""
+
+class TransferPrediction(BaseModel):
+    when_new_topic: str = ""
+    automatic_behavior: str = ""
+    strength_leverage: str = ""
+    trap_avoidance: str = ""
+
+class FrictionPoint(BaseModel):
+    friction_type: str
+    trigger: str
+    manifestation: str
+    mitigation: str
 
 class ReverseEngineeredModel(BaseModel):
-    transfer_prediction: str
-    predicted_friction_points: List[str]
-    compression_expansion_profile: str
+    mental_blueprint: MentalBlueprint = Field(default_factory=MentalBlueprint)
+    transfer_prediction: TransferPrediction = Field(default_factory=TransferPrediction)
+    predicted_friction_points: List[FrictionPoint] = Field(default_factory=list)
+    compression_expansion_profile: str = ""
+
+class ProbeStrategy(BaseModel):
+    when_to_probe: str = ""
+    probe_type_preference: str = ""
+    failure_response: str = ""
+
+class AnalogyConstraints(BaseModel):
+    allowed_families: List[str] = Field(default_factory=list)
+    forbidden_families: List[str] = Field(default_factory=list)
+    why: str = ""
+
+class ErrorHandling(BaseModel):
+    when_user_wrong: str = ""
+    when_user_confused: str = ""
+    when_user_overconfident: str = ""
+
+class TeachingBlueprint(BaseModel):
+    universal_start: str = ""
+    universal_avoid: List[str] = Field(default_factory=list)
+    explanation_structure: str = ""
+    analogy_constraints: AnalogyConstraints = Field(default_factory=AnalogyConstraints)
+    error_handling: ErrorHandling = Field(default_factory=ErrorHandling)
+
+class EnforcedConstraint(BaseModel):
+    constraint_id: str
+    type: str
+    rule: str
+    reason: str
+    severity: str
 
 class PedagogicalTelemetry(BaseModel):
-    concept_introduction_order: str
-    conceptual_step_size: str
-    analogy_domain: str
+    concept_introduction_order: str = ""
+    conceptual_step_size: str = ""
+    analogy_domain: str = ""
+    representation_priority: str = ""
+    pacing_strategy: str = ""
+    uncertainty_handling: str = ""
 
 class TutorDirective(BaseModel):
-    pedagogical_telemetry: PedagogicalTelemetry
-    enforced_constraints: List[str]
+    pedagogical_telemetry: PedagogicalTelemetry = Field(default_factory=PedagogicalTelemetry)
+    probe_strategy: ProbeStrategy = Field(default_factory=ProbeStrategy)
+    enforced_constraints: List[EnforcedConstraint] = Field(default_factory=list)
+    teaching_blueprint: TeachingBlueprint = Field(default_factory=TeachingBlueprint)
+
+class CognitiveDna(BaseModel):
+    evidence_ledger: List[EvidenceLedgerItem] = Field(default_factory=list)
+    atomic_evidence_map: AtomicEvidenceMap = Field(default_factory=AtomicEvidenceMap)
+    epistemic_signature: EpistemicSignature = Field(default_factory=EpistemicSignature)
+    knowledge_organization: KnowledgeOrganization = Field(default_factory=KnowledgeOrganization)
+    # New Mind Blueprint fields
+    learning_mechanism: LearningMechanism = Field(default_factory=LearningMechanism)
+    reasoning_style: ReasoningStyle = Field(default_factory=ReasoningStyle)
+    error_recovery: ErrorRecovery = Field(default_factory=ErrorRecovery)
+    metacognition: Metacognition = Field(default_factory=Metacognition)
+    transfer_readiness: TransferReadiness = Field(default_factory=TransferReadiness)
 
 class CognitiveProfilePayload(BaseModel):
     cognitive_dna: CognitiveDna

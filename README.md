@@ -1,234 +1,361 @@
-# Syntapse: Adaptive Single-Topic Second-Brain Engine
-> **Master Technical Blueprint & Agentic System Specification**
+# Syntapse — Adaptive Cognitive Learning Platform
+
+**Version:** 2.2 (Mind Blueprint Edition)  
+**Last Updated:** August 2026
 
 ---
 
-## 📌 Executive Summary & Core Philosophy
+## 🎯 What Is Syntapse?
 
-**Syntapse** is an agentic learning platform designed to solve the two biggest flaws in self-directed learning and current AI chatbots:
+Syntapse is an **AI-powered adaptive learning platform** that teaches like a human tutor — by understanding *how* each student thinks, learns, and processes information.
 
-1. **The Epistemic Blindspot (The Dunning-Kruger Trap):** Standard AI chatbots only answer what you ask. Because you don't know what you don't know, you walk away with superficial confidence while missing 40% of the core concepts.
-2. **One-Size-Fits-All Explanations:** Traditional tutorials and generic LLMs explain concepts using textbook jargon, ignoring how an individual's brain naturally processes information (whether through mechanical analogies, visual top-down blueprints, or code-first first-principles).
+Unlike traditional learning systems that treat all students the same, Syntapse builds a **Cognitive Profile** (a "Mind Blueprint") for each user by analyzing how they write and explain concepts. This profile predicts how they'll approach *any new topic* in the future.
 
-Syntapse builds a persistent **Cognitive Profile** of the user's mental learning style, locks conversations into **Single-Topic Isolated Chambers**, dynamically enriches knowledge via deduplicated background searches, and features an on-demand **Blindspot Audit Engine** that explicitly exposes missing concepts on a manual button click.
-
----
-
-## 💡 The Core Problem vs. The Syntapse Solution
-
-| Real-World Problem | Standard AI Failure | The Syntapse Solution |
-| :--- | :--- | :--- |
-| **Passive Knowledge Gaps** | Answers *only* what you ask, leaving huge hidden blindspots. | **On-Demand "Reveal Blindspots" Button:** Diffs chat history against domain ground-truth to highlight missing subtopics. |
-| **Generic Textbook Style** | Uses browser-default jargon; forgets custom prompts after 15 turns. | **Global Cognitive Profiling + Dual-Layer Teaching:** Explains via user's preferred analogies + 2-sentence technical reality anchor. |
-| **Context & Scope Drift** | Answers any off-topic query, polluting thread context and causing memory loss. | **3-Class Scope Guardrail Agent:** Blocks topic pivots and keeps the chat room locked to 100% topic focus. |
-| **Search Latency & Duplicates** | Slow live searches; dumps repetitive Bing links into context. | **Async Auto-Librarian:** Searches in the background, deduplicates facts (>0.85 cosine score), and updates context cleanly. |
+**The Core Idea:** Instead of just teaching *what* to learn, Syntapse teaches *how* the user's mind works.
 
 ---
 
-## 🔄 The Layman Pipeline (Phase by Phase)
+## 🧠 The Problem We Solve
 
-* **Phase 1: Brain Profiling (Global Calibration)**
-  * *Line 1:* You write a short paragraph about a topic you already know well to show how your brain works.
-  * *Line 2:* The system analyzes your style (analogies, top-down vs. code-first, tone) and saves your permanent `CognitiveProfile`.
+### Traditional Tutoring
+- One-size-fits-all explanations
+- Can't adapt when a student gets stuck
+- No understanding of *why* something is confusing
+- Treats students as empty vessels to fill
 
-* **Phase 2: Topic Room Creation (Scope Lock)**
-  * *Line 1:* You start a new chat by typing the exact topic you want to learn and what you already know about it (or click 'Beginner Skip').
-  * *Line 2:* The system narrows down huge topics (like turning "Physics" into "Newton's Laws") and locks the chat room for 100% focus.
-
-* **Phase 3: Smart Guardrail (The Boundary Bouncer)**
-  * *Line 1:* Before your question reaches the AI teacher, a guardrail agent checks if your input is related to the chat's topic.
-  * *Line 2:* It allows helpful metaphors (like comparing databases to libraries), but blocks off-topic questions and prompts you to open a new chat.
-
-* **Phase 4: Tailored Teaching (Dual-Layered Response)**
-  * *Line 1:* The AI teacher answers your question using your favorite analogies so the concept immediately clicks.
-  * *Line 2:* Right below the analogy, it gives a 2-sentence precise technical summary so you learn actual facts without over-simplification.
-
-* **Phase 5: Background Knowledge Search (The Auto-Librarian)**
-  * *Line 1:* If you ask a complex question, a background worker instantly searches Google for accurate, up-to-date facts.
-  * *Line 2:* It removes duplicate information (>0.85 similarity score) and saves fresh facts into your topic room without making you wait.
-
-* **Phase 6: The "Blindspot Audit" (Reveal What You Missed)**
-  * *Line 1:* You click a button called "Reveal Blindspots" whenever you want to check your true progress on the topic.
-  * *Line 2:* The system compares your chat history against a complete topic guide, finds the top 3 things you forgot to ask about, and shows them as a simple checklist.
+### Syntapse Approach
+- Builds a mental model of each learner
+- Predicts where they'll struggle before they do
+- Adapts teaching style to match their thinking patterns
+- Uses Socratic questioning to reveal misconceptions
 
 ---
 
-## 🤖 The 6 Core Agents & Responsibilities
+## 🏗️ System Architecture
 
-```mermaid
-graph TD
-    A[Global Calibration Menu] --> B[Agent 1: Brain Mapper / Cognitive Profiler]
-    B --> C[New Chat Initialization]
-    C --> D[Agent 2: Scope Architect / Baseline & Scope Sizer]
-    D --> E[Active Chat Room]
-    
-    E -->|User Asks Question| F[Agent 3: 3-Class Scope Guardrail]
-    F -->|Class 1: In-Bounds OR Class 2: Metaphor| G[Agent 4: Mentality Teacher]
-    F -->|Class 3: Off-Topic Pivot| H[Block Query & Redirect to New Chat]
-    
-    G --> I[Update DiscussedConcepts Array]
-    G -->|Async Low Confidence Flag| J[Agent 6: Auto-Librarian Search Worker]
-    J --> G
-    
-    E -->|User Clicks 'Reveal Blindspots' Button| K[Agent 5: Blindspot Auditor]
-    K --> J
-    K --> L[Render Interactive Blindspot Checklist UI]
-```
-
-### 1. Agent 1: Decoupled Cognitive Profiling Pipeline (*"Brain Mapper"*)
-* **Trigger:** User Calibration Menu & Target Topic Selection.
-* **Architecture:** Decoupled 3-Sub-Agent Pipeline:
-  * **Agent 1A: Cognitive Mapper:** Performs pure forensic linguistic analysis on the user's text to extract structural mechanics (`CognitiveMechanics` JSON). Zero predictions, zero domain judgments.
-  * **Agent 1B: Domain Grounding Agent:** Executed when a target topic $T$ is selected to map user mechanics against $T$'s canonical structure, producing evidence-traced friction predictions (`GroundedProfile` JSON).
-  * **Agent 1C: Translation Layer:** Compiles mechanics and friction maps into actionable system prompt overrides, pacing rules, and taboo metaphors for Agent 4 (`TutorDirective` JSON).
-* **Output:** Clean `CognitiveMechanics` + `GroundedProfile` + `TutorDirective` JSON payloads. Includes a 3-question diagnostic fallback if input text is sparse.
-
-### 2. Agent 2: Baseline & Scope Sizer (*"Scope Architect"*)
-* **Trigger:** New Chat Session creation.
-* **Role:** Sanitizes topic scope (narrows broad topics like *"Computer Science"* to *"Data Structures"*). Processes initial user baseline or handles the 'Beginner Skip' route by generating a 5-step starter curriculum.
-
-### 3. Agent 3: 3-Class Scope Guardrail (*"Boundary Bouncer"*)
-* **Trigger:** Pre-execution check on every user prompt.
-* **Role:** Enforces topic boundaries using 3-class intent classification:
-  * *Class 1 (In-Bounds):* Direct topic queries $\rightarrow$ Pass.
-  * *Class 2 (Metaphor Bridge):* Cross-domain metaphors $\rightarrow$ Allow.
-  * *Class 3 (Topic Pivot):* Unrelated topics $\rightarrow$ Block & prompt user to open a new chat room.
-
-### 4. Agent 4: Mentality Teacher (*"Dual-Layer Explainer"*)
-* **Trigger:** Approved user prompt in chat.
-* **Role:** Synthesizes responses using the user's `CognitiveProfile` in a Dual-Layer Format:
-  * *Layer 1 (Analogy Bridge):* Concepts mapped to user's native mental domain.
-  * *Layer 2 (Technical Reality Anchor):* 2-sentence precise technical fact.
-
-### 5. Agent 5: Blindspot Auditor (*"Gap Detector"*)
-* **Trigger:** Manual click on UI button **"Reveal Blindspots"**.
-* **Role:** Diffs session `DiscussedConcepts` against an LLM Ground-Truth Topic Blueprint. Identifies top 3 unmentioned critical subtopics and passes them to Agent 6 for enrichment.
-
-### 6. Agent 6: Auto-Librarian (*"Deduplicated Web Enricher"*)
-* **Trigger:** Async low-confidence flag or Auditor request.
-* **Role:** Searches Google/Tavily API. Runs vector similarity scoring (>0.85 cosine distance) to **merge/discard duplicate facts**, updating `ChatState.additional_info` cleanly.
-
----
-
-## ⚡ Agent Lifecycle Hooks & Event Loophole Solutions
-
-To ensure system reliability in production, Syntapse implements 5 strict **Lifecycle Event Hooks**:
+### Three Phases
 
 ```
-[ Event: user_message_received ] ──► (Hook: on_pre_guardrail_timeout) ──► 1.5s Fallback to Regex Classifier
-                                            │
-[ Event: assistant_response_start ] ─► (Hook: on_ui_stream_lock) ──────► Disable "Reveal Blindspots" UI Button
-                                            │
-[ Event: assistant_response_emit ] ──► (Hook: on_async_queue_lock) ─────► Prevent Search Race Conditions
-                                            │
-[ Event: session_state_update ] ────► (Hook: on_checkpoint_save) ─────► Atomic DB State Persistence
-                                            │
-[ Event: profile_mutation ] ────────► (Hook: on_profile_validation) ──► EMA Dampening & Jailbreak Filter
-```
-
-1. **Pre-Guardrail Timeout Hook (`on_pre_guardrail_timeout`):** If the Guardrail LLM latency exceeds 1.5 seconds, it automatically falls back to a fast local semantic embedding classifier to prevent chat lag.
-2. **UI Stream Lock Hook (`on_ui_stream_lock`):** Disables the "Reveal Blindspots" UI button while a response is actively streaming, preventing state corruption from rapid button clicks.
-3. **Async Search Queue Lock (`on_async_queue_lock`):** Employs an `AsyncLock(chat_id)` around `ChatState.additional_info` to prevent race conditions when multiple fast queries trigger background searches.
-4. **Atomic Checkpoint Hook (`on_checkpoint_save`):** Persists session state to DB immediately after scope sanitization so page reloads never lose the topic scope lock.
-5. **Profile Mutation Validation Hook (`on_profile_validation`):** Applies Exponential Moving Average (EMA) dampening and Pydantic validation to block adversarial prompt injection attempts aimed at corrupting `CognitiveProfile`.
-
----
-
-## 🛠️ Pydantic Data Schemas & State Objects
-
-### 1. `CognitiveProfile`
-```python
-from pydantic import BaseModel
-from typing import Optional
-
-class CognitiveProfile(BaseModel):
-    user_id: str
-    metaphor_domain: str          # e.g., "mechanical_engineering", "nature", "code"
-    abstraction_preference: str  # e.g., "top_down", "first_principles"
-    format_preference: str       # e.g., "bullet_points_with_code"
-    pacing: str                  # e.g., "micro_steps"
-    tone: str                    # e.g., "socratic_mentor"
-    quality_verified: bool = True
-```
-
-### 2. `ChatState`
-```python
-from pydantic import BaseModel
-from typing import List, Dict, Any
-
-class ScrapedInfoSnippet(BaseModel):
-    source_url: str
-    snippet: str
-    similarity_score: float
-
-class BlindspotItem(BaseModel):
-    concept: str
-    status: str  # "UNSEEN", "HIGHLIGHTED", "UNDERSTOOD"
-
-class ChatState(BaseModel):
-    chat_id: str
-    topic_name: str
-    scope_sanitized: bool = True
-    is_beginner_skip: bool = False
-    user_baseline: str
-    discussed_concepts: List[str] = []
-    additional_info: List[ScrapedInfoSnippet] = []
-    blindspot_checklist: List[BlindspotItem] = []
-    rolling_summary: str = ""
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PHASE 0: CALIBRATION                                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  User writes an essay about a topic they understand            │    │
+│  │         ↓                                                       │    │
+│  │  Agent 1 (Cognitive Mapper) analyzes HOW they think            │    │
+│  │         ↓                                                       │    │
+│  │  Mind Blueprint saved → Active Hypotheses generated            │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PHASE 1: LIVE CHAT LOOP                                               │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  User asks question                                             │    │
+│  │         ↓                                                       │    │
+│  │  Cognitive Validator (3A) → Guardrail (5) → Teacher (4)        │    │
+│  │         ↓                                                       │    │
+│  │  [If needed: Wavelength Setter (2) → Researcher (6)]           │    │
+│  │         ↓                                                       │    │
+│  │  Quality Critic (3C) evaluates → Memory Compressor             │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PHASE 2: UTILITIES                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  Gap Analyzer (3B) - Identifies knowledge gaps                  │    │
+│  │  Memory Compressor - Stores teaching history                    │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔬 Master Matrix of 10 Solved Contradictions & Loopholes
+## 👥 The 6 Agents
 
-| # | Potential Flaw / Contradiction | Impact | Syntapse Architectural Fix |
-|---|---|---|---|
-| **1** | Double Onboarding Friction | User fatigue from typing preferences every chat | Decouple Global Profile (done once) from Per-Chat Baseline. |
-| **2** | Lazy Calibration Input | Corrupted/hallucinated user profile | Quality Assessment Gate falling back to a 3-Question Diagnostic. |
-| **3** | Beginner Skip Path Search Crisis | No initial baseline to trigger targeted web search | Trigger a Curriculum Generator Agent to build a 5-step roadmap. |
-| **4** | Guardrail False Positives on Metaphors | User blocked from using metaphors (e.g. books for DBs) | 3-Class Guardrail System (In-Bounds, Metaphor Bridge, Pivot). |
-| **5** | Over-Ambitious Topic Scope | Broad topics ("Physics") break guardrails & blindspots | Scope Sizer Agent intercepts broad topics and narrows focus. |
-| **6** | Over-Simplification Trap | Bad analogies cause factually incorrect understanding | Dual-Layered Explanations (Metaphor Bridge + Technical Anchor). |
-| **7** | Live Search Latency Spike (6-10s) | Slow chat turn response times | Async Background Worker fetching search data for future turns. |
-| **8** | Blindspot Button Spam Loop | Redundant web searches on repeated button clicks | Blindspot Checklist State Machine tracking item completion. |
-| **9** | Volatile Profile Drift | Profile corrupted by one hasty user prompt | Exponential Moving Average dampening (requires 3-4 signals). |
-| **10**| Long Chat Context Pollution | LLM loses profile directives ("Lost in the Middle") | 6-Turn Rolling Buffer + Compressed `Topic Summary Memory`. |
+### Agent 1: Cognitive Mapper (The Forensic Analyst)
+**Purpose:** Build the Mind Blueprint
 
----
-
-## 📁 Repository Structure (`V:\PROJECTS\project_agents`)
-
-```
-V:\PROJECTS\project_agents\
-├── app/
-│   ├── agents/
-│   │   ├── profiler.py        # Agent 1: Global Cognitive Profiler
-│   │   ├── scope_sizer.py     # Agent 2: Scope Architect & Baseline Analyzer
-│   │   ├── guardrail.py       # Agent 3: 3-Class Scope Guardrail
-│   │   ├── responder.py       # Agent 4: Mentality Teacher Agent
-│   │   ├── auditor.py         # Agent 5: Blindspot Auditor Agent
-│   │   └── librarian.py       # Agent 6: Auto-Librarian Search Worker
-│   ├── storage/
-│   │   └── memory_store.py    # Persistent ChatState & CognitiveProfile store
-│   └── schemas.py             # Pydantic data models & state vectors
-├── static/
-│   ├── script.js              # UI interaction logic (Calibration, Chat, Blindspot Button)
-│   └── styles.css             # Glassmorphic dark-mode UI styling
-├── templates/
-│   └── index.html             # Single-Page App (SPA) layout
-├── LAYMAN_PROPOSAL.md         # 2-line layman pipeline summary
-├── PROPOSAL_AND_PIPELINE.md   # 4-page project whitepaper
-├── README.md                  # Master System Blueprint & Agent Specs (This File)
-└── run.py                     # Entry point for backend server (FastAPI/Flask)
-```
+- Analyzes user's writing sample (300+ words)
+- Extracts evidence of *how* they think:
+  - Learning mechanism (sequential vs parallel processing)
+  - Reasoning style (causal, analogical, deductive)
+  - Error recovery (how they handle mistakes)
+  - Metacognition (self-awareness of understanding)
+  - Transfer readiness (can they apply learning to new topics?)
+- **Output:** `cognitive_dna`, `reverse_engineered_model`, `tutor_directive`
 
 ---
 
-## 🤖 Instructions for AI Coding Assistants (Antigravity Directive)
+### Agent 2: Wavelength Setter (The Scope Tuner)
+**Purpose:** Determine learning depth
 
-When implementing or extending code in this repository:
-1. **Respect State Schemas:** Always route agent data through the Pydantic models in `app/schemas.py`.
-2. **Strict Guardrail Execution:** Never bypass `Agent 3 (Guardrail)` before invoking `Agent 4 (Responder)`.
-3. **Dual-Layer Enforcement:** System prompts for `Agent 4` MUST enforce Layer 1 (Metaphor) followed by Layer 2 (Technical Reality Anchor).
-4. **Async Non-Blocking Search:** Search calls in `Agent 6` must be non-blocking to preserve <2s chat response streaming.
-5. **Lifecycle Hooks Integration:** Ensure all 5 event hooks (`on_pre_guardrail_timeout`, `on_ui_stream_lock`, `on_async_queue_lock`, `on_checkpoint_save`, `on_profile_validation`) are active in the event loop.
+- Analyzes user's question complexity
+- Decides: MACRO (broad overview) vs MICRO (deep dive)
+- Generates search queries for research
+- **Triggered only** when deep research is needed
+
+---
+
+### Agent 3A: Cognitive Validator (The Probe Grader)
+**Purpose:** Evaluate Socratic probe answers
+
+- When teacher asks a question, this grades the user's answer
+- Updates cognitive hypotheses (support/refute/neutral)
+- Uses Bayesian confidence scoring
+- **Key:** Tracks what the user actually understands vs thinks they understand
+
+---
+
+### Agent 3B: Gap Analyzer (The Diagnostic Tool)
+**Purpose:** Identify knowledge gaps
+
+- Analyzes conversation history
+- Compares against curriculum map
+- Generates "Diagnose" cards with missing topics
+- **Triggered** via UI button or `/gap_analysis` endpoint
+
+---
+
+### Agent 3C: Quality Critic (The Editor)
+**Purpose:** Ensure teaching quality
+
+- Evaluates teacher's response against cognitive profile
+- Checks teaching blueprint compliance (concrete → abstract order)
+- Validates: no fluff, proper evidence, cognitive alignment
+- Enforces max 1 rewrite loop
+
+---
+
+### Agent 4: Teacher (The Adaptive Tutor)
+**Purpose:** Generate personalized explanations
+
+- Uses cognitive profile to adapt teaching style
+- Generates Socratic probes to test understanding
+- Incorporates research facts naturally
+- Follows enforced constraints from profile
+- **Key Behavior:** Concrete anchor first, then mechanism, then terminology
+
+---
+
+### Agent 5: Guardrail (The Traffic Controller)
+**Purpose:** Route user requests appropriately
+
+- Classifies intent: LEARNING, OFF_TOPIC, GREETING, META_QUERY
+- Detects when deep research is needed
+- Prevents off-topic conversations
+- Zero-token bypass for greetings/meta
+
+---
+
+### Agent 6: Researcher (The Auto-Librarian)
+**Purpose:** Fetch and synthesize external knowledge
+
+- Uses Tavily search API
+- Extracts source-supported facts
+- Canonicalizes subtopics
+- Caches results to avoid redundant searches
+- **Max 2 loops** before teacher must proceed without more research
+
+---
+
+## 📊 The Mind Blueprint Schema
+
+When a user calibrates, we extract this complete profile:
+
+```json
+{
+  "cognitive_dna": {
+    "evidence_ledger": [...],        // Raw observations from writing
+    "atomic_evidence_map": {...},    // Clause structure, causal reasoning patterns
+    "learning_mechanism": {          // NEW: How they process new info
+      "input_processing_style": "sequential_ingestion",
+      "concept_anchoring": "example_dependent"
+    },
+    "reasoning_style": {             // NEW: How they think
+      "primary_mode": "causal",
+      "directionality": "forward_chaining"
+    },
+    "error_recovery": {...},          // NEW: How they handle mistakes
+    "metacognition": {...},           // NEW: Self-awareness
+    "transfer_readiness": {...}       // NEW: Can apply to new topics
+  },
+  "reverse_engineered_model": {
+    "mental_blueprint": {
+      "primary_entry_point": "What user reaches for FIRST when learning",
+      "cognitive_sequence": "Order of mental operations",
+      "bottleneck": "Where they'll get stuck"
+    },
+    "transfer_prediction": {
+      "when_new_topic": "How they'll approach any new topic"
+    },
+    "predicted_friction_points": [...]
+  },
+  "tutor_directive": {
+    "pedagogical_telemetry": {
+      "concept_introduction_order": "CONCRETE_FIRST",
+      "analogy_domain": "MECHANICS",
+      "pacing_strategy": "SLOW_BUILD"
+    },
+    "teaching_blueprint": {
+      "explanation_structure": "CONCRETE → MECHANISM → TERMINOLOGY → PRACTICE"
+    }
+  }
+}
+```
+
+---
+
+## 🔄 Data Flow Example
+
+### Scenario: User asks "How does virtual memory work?"
+
+```
+1. USER MESSAGE → Cognitive Validator (3A)
+   - No probe from previous turn, so skip validation
+
+2. Guardrail (5) classifies as LEARNING
+   - No deep research needed
+
+3. Teacher (4) receives:
+   - cognitive_profile (from calibration)
+   - active_hypotheses (compiled from profile)
+   - research_catalog (if any exists)
+
+4. Teacher generates response:
+   - Starts with concrete example (page table code)
+   - Explains mechanism (how CPU translates addresses)
+   - Adds terminology (TLB, page fault)
+   - Ends with Socratic probe
+
+5. Quality Critic (3C) evaluates:
+   - Did teacher start with concrete anchor? ✓
+   - Did they follow concept_introduction_order? ✓
+   - Is response aligned with cognitive_profile? ✓
+   - Any fluff/template language? ✗
+
+6. If PASS → Memory Compressor stores ghost record
+   If FAIL → Teacher rewrites with critique feedback
+
+7. Response sent to user
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | FastAPI, LangGraph, Pydantic |
+| **LLM Providers** | Groq (Llama 3.3), NVIDIA NIM (Llama 3.1) |
+| **Search** | Tavily API |
+| **Database** | SQLite (sessions), Redis (cache) |
+| **Frontend** | React, TypeScript, TailwindCSS, Zustand |
+| **3D Graphics** | Three.js (Neural Background) |
+
+---
+
+## 📁 Project Structure
+
+```
+v:\PROJECTS\project_agents\
+├── backend/
+│   ├── main.py              # FastAPI entry point
+│   ├── graph.py             # LangGraph definition
+│   ├── nodes.py             # All 6 agent implementations
+│   ├── orchestrator.py      # Agent 1 (Calibration)
+│   ├── state.py             # Pydantic state model
+│   ├── schemas.py           # All JSON schemas
+│   ├── cognitive/           # Profile compilation & validation
+│   │   ├── profile_compiler.py
+│   │   ├── profile_reducer.py
+│   │   └── profile_schema.py
+│   └── prompt_skills/       # (moved to root)
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   │   ├── calibration/ # Calibration UI
+│   │   │   ├── chamber/     # Main chat interface
+│   │   │   ├── dashboard/   # Session management
+│   │   │   └── three/       # 3D background effects
+│   │   ├── services/        # API client
+│   │   ├── store/           # Zustand state
+│   │   └── types/           # TypeScript definitions
+│   └── package.json
+│
+├── prompt_skills/           # Agent system prompts
+│   ├── cognitive_mapper_vr_holy_grail.md
+│   ├── teacher_tutor_vr_holy_grail.md
+│   ├── quality_critic_vr_holy_grail.md
+│   ├── guardrail_vr_holy_grail.md
+│   ├── gap_analyzer_vr_holy_grail.md
+│   └── ...
+│
+└── project_information/     # Design documents
+    ├── AGENT_ARCHITECTURE_AND_FLOW.md
+    ├── PROPOSAL_AND_PIPELINE.md
+    └── ...
+```
+
+---
+
+## 🚀 Quick Start
+
+### Backend
+```bash
+cd backend
+pip install -r requirements.txt
+# Set environment variables in .env
+python main.py
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Calibration Flow
+1. User navigates to calibration page
+2. User writes 300+ words explaining a topic they understand
+3. System analyzes writing sample
+4. Mind Blueprint generated and stored
+5. User enters learning chamber
+6. All future explanations adapt to their cognitive profile
+
+---
+
+## 📈 Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Mind Blueprint** | Complete model of how user thinks |
+| **Bayesian Hypothesis Tracking** | Confidence-weighted understanding tracking |
+| **Socratic Probing** | Questions that reveal true understanding |
+| **Cognitive Alignment** | Teaching adapts to learning style |
+| **Gap Analysis** | Automatic identification of missing knowledge |
+| **Research Integration** | Live web search for up-to-date facts |
+| **Quality Critics** | Ensures teaching meets cognitive standards |
+| **Memory Compression** | Efficient storage of teaching history |
+
+---
+
+## 🔮 Future Enhancements
+
+- [ ] Multi-modal calibration (voice, video)
+- [ ] Real-time hypothesis visualization
+- [ ] Collaborative learning chambers
+- [ ] Adaptive difficulty based on cognitive load
+- [ ] Integration with external LMS platforms
+
+---
+
+## 📄 License
+
+This project is proprietary software developed by the Syntapse team.
+
+---
+
+*Built with ❤️ for adaptive learning*

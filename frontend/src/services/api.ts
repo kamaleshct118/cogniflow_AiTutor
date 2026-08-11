@@ -278,10 +278,12 @@ interface ChatResult {
 }
 
 const TELEMETRY_SEQUENCE = [
-  { agent: 'Agent 5', label: 'Validating topic boundaries' },
-  { agent: 'Agent 6', label: 'Scraping ArXiv for verified facts' },
-  { agent: 'Agent 2', label: 'Mapping knowledge graph nodes' },
-  { agent: 'Agent 4', label: 'Synthesizing Socratic lesson' },
+  { agent: 'Agent 3A', label: 'Validating Socratic probe response' },
+  { agent: 'Agent 5', label: 'Evaluating topic scope & research intent' },
+  { agent: 'Agent 2', label: 'Determining search wavelength & query plan' },
+  { agent: 'Agent 6', label: 'Scraping web docs & building research catalog' },
+  { agent: 'Agent 4', label: 'Synthesizing concrete Socratic explanation' },
+  { agent: 'Agent 3C', label: 'Auditing pedagogical quality & cognitive alignment' },
 ];
 
 export async function sendChat(

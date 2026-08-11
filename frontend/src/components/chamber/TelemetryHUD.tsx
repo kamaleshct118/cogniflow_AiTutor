@@ -1,10 +1,13 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Cpu, Globe, Shield, Brain } from 'lucide-react';
+import { Activity, Cpu, Globe, Shield, Brain, Scale, CheckCircle2, SearchCode } from 'lucide-react';
 import { useSyntapseStore } from '@/store/useSyntapseStore';
 
 const AGENT_ICONS: Record<string, typeof Activity> = {
   'Agent 1': Cpu,
   'Agent 2': Brain,
+  'Agent 3A': CheckCircle2,
+  'Agent 3B': SearchCode,
+  'Agent 3C': Scale,
   'Agent 4': Activity,
   'Agent 5': Shield,
   'Agent 6': Globe,
@@ -13,6 +16,9 @@ const AGENT_ICONS: Record<string, typeof Activity> = {
 const AGENT_COLORS: Record<string, string> = {
   'Agent 1': 'var(--accent-violet-glow)',
   'Agent 2': 'var(--accent-violet-glow)',
+  'Agent 3A': 'var(--accent-mint-glow)',
+  'Agent 3B': 'var(--accent-amber)',
+  'Agent 3C': 'var(--accent-terracotta-glow)',
   'Agent 4': 'var(--accent-amber)',
   'Agent 5': 'var(--accent-terracotta-glow)',
   'Agent 6': 'var(--accent-mint-glow)',
