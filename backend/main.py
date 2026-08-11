@@ -62,7 +62,7 @@ class CalibrationResponse(BaseModel):
 class SessionStartRequest(BaseModel):
     session_id: str
     topic_name: str
-    cognitive_profile: Dict[str, Any]
+    cognitive_profile: Optional[Dict[str, Any]] = None
     user_context: Optional[str] = None
 
 class SessionStartResponse(BaseModel):
@@ -83,7 +83,8 @@ class ChatResponse(BaseModel):
     message: str
     probe: Optional[Dict[str, Any]] = None
     depth: Optional[str] = None
-    agents_triggered: Optional[List[str]] = None  # FIX #6: Real telemetry
+    agents_triggered: Optional[List[str]] = None  # Telemetry list
+    quality_regeneration_count: Optional[int] = 0  # Regeneration passes count
 
 class GapAnalysisResponse(BaseModel):
     session_id: str
@@ -295,22 +296,26 @@ async def chat(request: ChatRequest):
         last_teacher_res = result.get("last_teacher_response") or {}
         probe = result.get("last_teacher_probe")
         
-        # FIX #6: Build real agent telemetry from actual result state flags
+        # Build real agent telemetry from actual result state flags
         agents_triggered = ["Agent 5 (Guardrail)"]
         if result.get("research_attempts", 0) > (current_state.values.get("research_attempts") or 0):
             agents_triggered.append("Agent 2 (Wavelength Setter)")
             agents_triggered.append("Agent 6 (Researcher)")
         if not result.get("is_greeting") and not result.get("is_meta"):
             agents_triggered.append("Agent 4 (Teacher)")
+            agents_triggered.append("Agent 3C (Quality Critic)")
+        
+        regen_count = result.get("quality_regeneration_count", 0)
         
         print(" 🧑‍🏫 [AGENT 4 - TEACHER RESPONSE GENERATED]")
-        print(f"    • Response Length: {len(response_msg)} chars")
-        print(f"    • Depth Level    : {last_teacher_res.get('explanation_depth', 'Deep')}")
-        print(f"    • Agents Triggered: {agents_triggered}")
+        print(f"    • Response Length    : {len(response_msg)} chars")
+        print(f"    • Depth Level       : {last_teacher_res.get('explanation_depth', 'Deep')}")
+        print(f"    • Quality Rewriting : {regen_count} pass(es)")
+        print(f"    • Agents Triggered  : {agents_triggered}")
         if probe:
             print(" 🎯 [SOCRATIC PROBE CREATED]")
-            print(f"    • Target Concept : {probe.get('target_concept')}")
-            print(f"    • Probe Question : \"{probe.get('question')}\"")
+            print(f"    • Target Concept    : {probe.get('target_concept')}")
+            print(f"    • Probe Question    : \"{probe.get('question')}\"")
         print("="*60 + "\n")
         
         return ChatResponse(
@@ -318,7 +323,8 @@ async def chat(request: ChatRequest):
             message=response_msg,
             probe=probe,
             depth=last_teacher_res.get("explanation_depth"),
-            agents_triggered=agents_triggered
+            agents_triggered=agents_triggered,
+            quality_regeneration_count=regen_count
         )
         
     except HTTPException:

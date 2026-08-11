@@ -23,7 +23,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 # from google.genai import types
 
 from state import SyntapseChamberState
-from schemas import GuardrailDecision, TeacherResponsePayload, KnowledgeGapAnalysis, ResearchPayload, ScopeSizerPayload
+from schemas import GuardrailDecision, TeacherResponsePayload, KnowledgeGapAnalysis, ResearchPayload, ScopeSizerPayload, QualityCriticPayload
 from pydantic import ValidationError
 
 import urllib.request
@@ -646,7 +646,8 @@ def teacher_node(state: SyntapseChamberState) -> Dict[str, Any]:
     else:
         trimmed_research = research
 
-    prompt = json.dumps({
+    quality_critique = state.get("quality_critique")
+    prompt_payload = {
         "CURRENT_USER_QUESTION": current_user_question,
         "PRIORITY_RULE": (
             "You MUST answer the CURRENT_USER_QUESTION. "
@@ -662,7 +663,23 @@ def teacher_node(state: SyntapseChamberState) -> Dict[str, Any]:
             "research_catalog": trimmed_research
         },
         "recent_history": (chat_history or [])[-4:]
-    })
+    }
+    
+    last_validation = state.get("last_validation")
+    if last_validation:
+        prompt_payload["LAST_PROBE_VALIDATION"] = last_validation
+    
+    actionable_feedback = state.get("quality_actionable_feedback") or {}
+    if quality_critique:
+        prompt_payload["CRITIQUE_FEEDBACK"] = (
+            f"YOUR PREVIOUS DRAFT WAS REJECTED BY AGENT 3C QUALITY CRITIC FOR THE FOLLOWING REASON:\n"
+            f"  \"{quality_critique}\"\n"
+        )
+        if actionable_feedback.get("how_to_fix"):
+            prompt_payload["REQUIRED_REVISION_STEPS"] = actionable_feedback.get("how_to_fix")
+        prompt_payload["REVISION_DIRECTIVE"] = "YOU MUST REVISE YOUR DRAFT TO FIX THESE CRITICAL ISSUES DIRECTLY WHILE PRESERVING YOUR SOCRATIC PROBE AND CONCRETE ANCHOR MANDATE."
+
+    prompt = json.dumps(prompt_payload)
     
     if os.getenv("MOCK_LLM", "false").lower() == "true":
         return {
@@ -787,12 +804,17 @@ def teacher_node(state: SyntapseChamberState) -> Dict[str, Any]:
     if isinstance(socratic_obj, dict):
         probe_dict.update(socratic_obj)
     
+    new_concepts = payload.get("concepts_covered", []) or []
+    current_discussed = state.get("discussed_concepts", []) or []
+    updated_discussed = list(set(current_discussed + new_concepts))
+
     # Append the new AI message to the conversation stream
     return {
         "messages": [AIMessage(content=formatted_response)],
         "last_teacher_probe": probe_dict,
         "last_teacher_response": payload,
-        "active_cognitive_hypotheses": active_hypotheses  # Write back pruned hypotheses
+        "active_cognitive_hypotheses": active_hypotheses,
+        "discussed_concepts": updated_discussed
     }
 
 def cognitive_validator_node(state: SyntapseChamberState) -> Dict[str, Any]:
@@ -988,9 +1010,132 @@ def gap_analyzer_node(state: SyntapseChamberState) -> Dict[str, Any]:
             "suggestions": [{"button_label": "Explore Advanced Mechanics", "search_query": "Advanced Mechanics"}]
         }
     
+    from datetime import datetime, timezone
+    gap_event = {
+        "event_type": "gap_analysis",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "summary": payload.get("diagnostic_summary"),
+        "suggestions_count": len(payload.get("suggestions", []))
+    }
+    
     return {
         "last_gap_analysis": payload,
-        "trigger_gap_analysis": False
+        "trigger_gap_analysis": False,
+        "cognitive_events": [gap_event]
+    }
+
+def quality_critic_node(state: SyntapseChamberState) -> Dict[str, Any]:
+    """
+    AGENT 3C: Quality Critic Node.
+    Audits the Teacher Agent response draft for completeness, anti-fluff, cognitive profile alignment, and research fact utilization.
+    Runs on NVIDIA Llama 3.1 8B Instruct API for fast prompt auditing.
+    Enforces a strict Max-1 rewrite loop to prevent infinite LLM chatter.
+    """
+    last_teacher_res = state.get("last_teacher_response")
+    if not last_teacher_res:
+        return {"quality_critique": None}
+        
+    regeneration_count = state.get("quality_regeneration_count", 0)
+    if regeneration_count >= 1:
+        logger.info("Agent 3C: Max regeneration count reached (1). Approving response.")
+        return {"quality_critique": None}
+        
+    last_human_msg = get_latest_human_message(state)
+    user_prompt = str(last_human_msg.content) if last_human_msg else ""
+    
+    last_probe = state.get("last_teacher_probe")
+    probe_context = None
+    if last_probe and last_probe.get("question"):
+        probe_context = {
+            "PROBE_QUESTION": last_probe.get("question"),
+            "USER_ANSWER": user_prompt,
+            "TARGET_CONCEPT": last_probe.get("target_concept"),
+            "EXPECTED_EVIDENCE": last_probe.get("expected_evidence")
+        }
+        
+    topic_name = state.get("topic_name", "General")
+    research_catalog = state.get("research_catalog", [])
+    cognitive_profile = state.get("cognitive_profile", {})
+    
+    system_instruction = load_skill_prompt("quality_critic_vr_holy_grail")
+    
+    input_payload = {
+        "TOPIC_NAME": topic_name,
+        "USER_QUERY": user_prompt,
+        "PROBE_EVALUATION_CONTEXT": probe_context,
+        "TEACHER_DRAFT_RESPONSE": last_teacher_res,
+        "RESEARCH_CATALOG_FACTS": research_catalog[:3],
+        "COGNITIVE_MAPPER_PROFILE": cognitive_profile
+    }
+    
+    api_key = os.getenv("MODEL_3C_QUALITY_CRITIC_KEY") or os.getenv("MODEL_3_GAP_ANALYZER_KEY") or os.getenv("MODEL_6_RESEARCHER_KEY")
+    critic_res = call_nvidia_api(
+        system_instruction=system_instruction,
+        user_content=json.dumps(input_payload),
+        api_key=api_key,
+        model_name="meta/llama-3.1-8b-instruct"
+    )
+    
+    if not critic_res:
+        groq_key = os.getenv("MODEL_5_GUARDRAIL_KEY") or os.getenv("MODEL_4_TEACHER_KEY")
+        critic_res = call_groq_api(
+            system_instruction=system_instruction,
+            user_content=json.dumps(input_payload),
+            api_key=groq_key,
+            model_name="llama-3.1-8b-instant"
+        )
+        
+    print("\n" + "="*65)
+    print(f" ⚖️ [AGENT 3C — QUALITY CRITIC AUDIT EXECUTION]")
+    print(f"    • Target LLM Model   : NVIDIA Llama 3.1 8B Instruct (NIM API)")
+    print(f"    • Audit Pass Count   : {regeneration_count + 1} / 2")
+    
+    if isinstance(critic_res, dict):
+        try:
+            validated = QualityCriticPayload.model_validate(critic_res)
+            critic_res = validated.model_dump()
+        except ValidationError as e:
+            logger.error(f"Agent 3C schema validation failed: {e}")
+            
+        quality_passed = critic_res.get("quality_passed", True)
+        critique = critic_res.get("critique")
+        actionable_feedback = critic_res.get("actionable_feedback") or {}
+        
+        status_symbol = "✅ APPROVED (PASS)" if quality_passed else "❌ REJECTED (FAIL)"
+        print(f"    • Audit Decision     : {status_symbol}")
+        print(f"    • Completeness Score : {critic_res.get('prompt_completeness_score', 0.0):.2f} / 1.00")
+        print(f"    • Anti-Fluff Score   : {critic_res.get('anti_fluff_score', 0.0):.2f} / 1.00")
+        print(f"    • Fact Grounding     : {critic_res.get('fact_grounding_score', 0.0):.2f} / 1.00")
+        print(f"    • Profile Alignment  : {critic_res.get('profile_alignment_score', 0.0):.2f} / 1.00")
+        
+        if actionable_feedback:
+            issues = actionable_feedback.get("critical_issues", [])
+            fixes = actionable_feedback.get("how_to_fix", [])
+            if issues:
+                print(f"    • Critical Flaws     : {issues}")
+            if fixes:
+                print(f"    • How To Fix Steps   : {fixes}")
+                
+        if critique:
+            print(f"    • Actionable Critique: \"{critique}\"")
+        print("="*65 + "\n")
+        
+        if not quality_passed and critique:
+            logger.info(f"Agent 3C rejected draft. Triggering rewrite loop pass 1: {critique}")
+            return {
+                "quality_critique": critique,
+                "quality_evaluation": critic_res,
+                "quality_actionable_feedback": actionable_feedback,
+                "quality_regeneration_count": regeneration_count + 1
+            }
+    else:
+        print(f"    • Raw Response       : {critic_res}")
+        print("="*65 + "\n")
+            
+    return {
+        "quality_critique": None,
+        "quality_evaluation": critic_res if isinstance(critic_res, dict) else None,
+        "quality_actionable_feedback": None
     }
 
 def memory_compressor_node(state: SyntapseChamberState) -> Dict[str, Any]:

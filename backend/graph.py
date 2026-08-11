@@ -22,9 +22,10 @@
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
+import os
 import sqlite3
 from state import SyntapseChamberState
-from nodes import guardrail_node, research_node, teacher_node, cognitive_validator_node, gap_analyzer_node, memory_compressor_node, wavelength_setter_node
+from nodes import guardrail_node, research_node, teacher_node, cognitive_validator_node, gap_analyzer_node, memory_compressor_node, wavelength_setter_node, quality_critic_node
 
 # --- CONDITIONAL ROUTING FUNCTIONS ---
 
@@ -44,17 +45,32 @@ def route_from_guardrail(state: SyntapseChamberState) -> str:
     if state.get("requires_deep_research"):
         return "wavelength_setter"
         
-    # 4. Standard path: go straight to teacher (we compress memory AFTER the teacher speaks now)
+    # 4. Standard path: go straight to teacher
     return "teacher"
 
 def route_from_teacher(state: SyntapseChamberState) -> str:
     """
-    Decides if the Teacher needs to loop back to the Researcher.
+    Decides if the Teacher needs to loop back to the Researcher or move to Quality Critic.
     """
     if state.get("requires_deep_research"):
         attempts = state.get("research_attempts", 0)
         if attempts < 2:
             return "wavelength_setter"
+    return "quality_critic"
+
+def route_from_quality_check(state: SyntapseChamberState) -> str:
+    """
+    Decides if Teacher draft passed Quality Critic audit or requires a rewrite pass.
+    Enforces Max-1 rewrite loop.
+    """
+    critique = state.get("quality_critique")
+    regeneration_count = state.get("quality_regeneration_count", 0)
+    
+    if critique and regeneration_count <= 1:
+        print(f" 🔀 [ROUTER: QUALITY CHECK] ❌ Draft Failed Audit. Redraft Pass {regeneration_count} triggered. Routing back to Agent 4 (Teacher)...")
+        return "teacher"
+    
+    print(f" 🔀 [ROUTER: QUALITY CHECK] ✅ Draft Approved! Proceeding to Ghost Memory Compressor Utility Node...")
     return "memory_compressor"
 
 # --- BUILD THE LANGGRAPH ---
@@ -67,12 +83,13 @@ def build_syntapse_graph() -> StateGraph:
     builder = StateGraph(SyntapseChamberState)
 
     # 2. Add all Agent Nodes
-    builder.add_node("cognitive_validator", cognitive_validator_node) # Agent 3 (runs first)
+    builder.add_node("cognitive_validator", cognitive_validator_node) # Agent 3A (runs first)
     builder.add_node("guardrail", guardrail_node)         # Agent 5
     builder.add_node("wavelength_setter", wavelength_setter_node) # Agent 2
     builder.add_node("researcher", research_node)         # Agent 6
-    builder.add_node("memory_compressor", memory_compressor_node) # Utility
     builder.add_node("teacher", teacher_node)             # Agent 4
+    builder.add_node("quality_critic", quality_critic_node) # Agent 3C
+    builder.add_node("memory_compressor", memory_compressor_node) # Utility
     builder.add_node("gap_analyzer", gap_analyzer_node)   # FAB Logic
 
     # 3. Define the Control Flow Edges
@@ -100,12 +117,22 @@ def build_syntapse_graph() -> StateGraph:
     # If Researcher (Agent 6) is called, it hands off to Teacher to generate response
     builder.add_edge("researcher", "teacher")
     
-    # The Teacher evaluates if it needs fallback research. If not, it hands off to Memory Compressor for background cleanup.
+    # The Teacher evaluates if it needs fallback research. If not, it hands off to Quality Critic (Agent 3C).
     builder.add_conditional_edges(
         "teacher",
         route_from_teacher,
         {
             "wavelength_setter": "wavelength_setter",
+            "quality_critic": "quality_critic"
+        }
+    )
+
+    # Quality Critic audits Teacher draft: loops back to Teacher on FAIL, or proceeds to Memory Compressor on PASS
+    builder.add_conditional_edges(
+        "quality_critic",
+        route_from_quality_check,
+        {
+            "teacher": "teacher",
             "memory_compressor": "memory_compressor"
         }
     )
@@ -120,7 +147,8 @@ def build_syntapse_graph() -> StateGraph:
     builder.add_edge("gap_analyzer", END)
 
     # Compile the graph with persistent SQLite checkpointer (survives server restarts)
-    conn = sqlite3.connect("./syntapse_sessions.db", check_same_thread=False)
+    db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "syntapse_sessions.db"))
+    conn = sqlite3.connect(db_path, check_same_thread=False)
     memory = SqliteSaver(conn)
     graph = builder.compile(checkpointer=memory)
     

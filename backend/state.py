@@ -77,11 +77,15 @@ class SyntapseChamberState(TypedDict):
     is_meta: bool
     search_plan: Optional[dict]
     
-    # --- 5. COGNITIVE FEEDBACK LOOP ---
-    # Tracks the longitudinal hypothesis testing loop
+    # --- 5. COGNITIVE FEEDBACK LOOP & QUALITY AUDIT ---
+    # Tracks the longitudinal hypothesis testing loop and quality critic state
     active_cognitive_hypotheses: Dict[str, dict]
     last_teacher_probe: Optional[dict]
     last_teacher_response: Optional[dict]
+    quality_critique: Optional[str]
+    quality_evaluation: Optional[dict]
+    quality_actionable_feedback: Optional[dict]
+    quality_regeneration_count: int
     cognitive_events: Annotated[List[dict], append_research]
     last_validation: Optional[dict]
     last_gap_analysis: Optional[dict]

@@ -108,6 +108,50 @@ def compile_raw_profile(raw_profile: Dict[str, Any]) -> Dict[str, Any]:
             "confidence": 0.50
         }
 
+    # 4. Learning Mechanism Hypothesis
+    learn_mech = dna.get("learning_mechanism", {})
+    if isinstance(learn_mech, dict) and learn_mech.get("concept_anchoring"):
+        pattern = learn_mech["concept_anchoring"].get("pattern", "example_dependent")
+        h_id = generate_h_id("LEARN", pattern)
+        active_hypotheses[h_id] = {
+            "hypothesis_id": h_id,
+            "pattern": pattern,
+            "source_evidence_ids": [],
+            "teaching_policy": {
+                "concept_introduction_order": "concrete code/tool anchor -> mechanism -> formal theory",
+                "conceptual_step_size": pedagogy.get("conceptual_step_size", "small"),
+                "representation_priority": "concrete_anchor",
+                "analogy_policy": pedagogy.get("analogy_domain", "mechanistic"),
+                "enforced_constraints": constraints
+            },
+            "support_weight": 0.0,
+            "contradiction_weight": 0.0,
+            "status": "active_hypothesis",
+            "confidence": 0.50
+        }
+
+    # 5. Reasoning Style Hypothesis
+    reason_style = dna.get("reasoning_style", {})
+    if isinstance(reason_style, dict) and reason_style.get("primary_mode"):
+        pattern = reason_style["primary_mode"].get("pattern", "mechanistic_causal")
+        h_id = generate_h_id("REASON", pattern)
+        active_hypotheses[h_id] = {
+            "hypothesis_id": h_id,
+            "pattern": pattern,
+            "source_evidence_ids": [],
+            "teaching_policy": {
+                "concept_introduction_order": "trigger -> sequential cause-effect trace -> outcome",
+                "conceptual_step_size": "medium",
+                "representation_priority": "causal_chain",
+                "analogy_policy": pedagogy.get("analogy_domain", "mechanistic"),
+                "enforced_constraints": constraints
+            },
+            "support_weight": 0.0,
+            "contradiction_weight": 0.0,
+            "status": "active_hypothesis",
+            "confidence": 0.50
+        }
+
     return {
         "raw_forensic_profile": raw_profile, # Retain Evidence Ledger for auditability
         "active_hypotheses": active_hypotheses

@@ -188,19 +188,19 @@ User Answers Socratic Probe
                                      │
       ┌──────────────────────────────┼──────────────────────────────┐
       │ (Gap Analysis Request)       │ (Needs Deep Search)          │ (Fast Path / Probe Answer)
-      ▼                              ▼                              ▼
-┌──────────────┐               ┌──────────────┐               ┌──────────────┐
-│ AGENT 3B     │               │ AGENT 2      │               │ AGENT 4      │
-│ Gap Analyzer │               │ Wavelength   │               │ Teacher      │
-└──────┬───────┘               └──────┬───────┘               └──────┬───────┘
-       │                              │                              │
-       │                              ▼                              │
-       │                       ┌──────────────┐                      │
-       │                       │ AGENT 6      │                      │
-       │                       │ Researcher   │                      │
-       │                       └──────┬───────┘                      │
-       │                              │                              │
-       │                              └──────────────┬───────────────┘
+      ▼                              ▼                              │
+┌──────────────┐               ┌──────────────┐                     │
+│ AGENT 3B     │               │ AGENT 2      │                     │
+│ Gap Analyzer │               │ Wavelength   │                     │
+└──────┬───────┘               └──────┬───────┘                     │
+       │                              │                             │
+       │                              ▼                             │
+       │                       ┌──────────────┐                     │
+       │                       │ AGENT 6      │                     │
+       │                       │ Researcher   │                     │
+       │                       └──────┬───────┘                     │
+       │                              │                             │
+       │                              └──────────────┬──────────────┘
        │                                             │
        │                                             ▼
        │                                      ┌──────────────┐
@@ -212,14 +212,25 @@ User Answers Socratic Probe
        │                                             │
        │                                             ▼
        │                                      ┌──────────────┐
-       │                                      │ Ghost Memory │
-       │                                      │ Compressor   │
+       │                                      │ AGENT 3C     │
+       │                                      │ Critic       │
        │                                      └──────┬───────┘
        │                                             │
-       └──────────────────────┬──────────────────────┘
-                              │
-                              ▼
-                           [ END ]
+       │                                 ┌───────────┴───────────┐
+       │                             (FAIL)                   (PASS)
+       │                                 │                       │
+       │                                 ▼                       ▼
+       │                          ┌─────────────┐         ┌─────────────┐
+       │                          │ Loop back   │         │ Ghost       │
+       │                          │ to Agent 4  │         │ Memory      │
+       │                          │ (Max-1 Pass)│         │ Compressor  │
+       │                          └─────────────┘         └──────┬──────┘
+       │                                                         │
+       └─────────────────────────────────────────────────────────┤
+                                                                 │
+                                                                 ▼
+                                                              [ END ]
+```
 ```
 
 ---
@@ -276,7 +287,7 @@ User Answers Socratic Probe
 
 ---
 
-#### 📶 Pedagogical Synthesis & Fallback Router (AGENT 4 ──► Router 2)
+#### 📶 Pedagogical Synthesis & Quality Audit Phase (AGENT 4 ──► AGENT 3C ──► Router 3)
 
 * **Conditional Decision Flow**:
   * **AGENT 4 (Mentality Teacher)**:
@@ -284,10 +295,15 @@ User Answers Socratic Probe
     * `ELSE` ──► Synthesize personalized response matching Cognitive DNA ──► Set new `last_teacher_probe`.
   * **Router 2 (`route_from_teacher`)**:
     * `IF` missing technical details AND `research_attempts < 2` ──► Loop back to **AGENT 2 (Wavelength Setter)** for deeper search.
-    * `ELSE` (Complete OR `research_attempts >= 2`) ──► Route to **Ghost Memory Compressor Utility Node**.
+    * `ELSE` ──► Route to **AGENT 3C (Quality Critic)**.
+  * **AGENT 3C (Quality Critic)**:
+    * Audits draft for completeness, anti-fluff, fact grounding, and concrete-anchor profile alignment using NVIDIA Llama 3.1 8B.
+  * **Router 3 (`route_from_quality_check`)**:
+    * `IF` `quality_critique != null` AND `quality_regeneration_count <= 1` ──► Loop directly back to **AGENT 4** for redraft pass.
+    * `ELSE` (Approved OR `regeneration_count >= 1`) ──► Route to **Ghost Memory Compressor Utility Node**.
 
 * **Intuitive Explanation**:
-  Agent 4 crafts a Socratic explanation tailored to your Cognitive Profile using facts from `research_catalog` and uploaded reference notes (`user_topic_context`). If key details are still missing, Router 2 loops back to Agent 2 for one fallback research attempt (max 2 loops). Otherwise, it hands off to Memory Compression.
+  Agent 4 crafts a Socratic explanation tailored to your Cognitive Profile using facts from `research_catalog` and uploaded reference notes (`user_topic_context`). Agent 3C audits the Teacher's draft. If the draft has conversational fluff, missing requested code, or lacks a concrete anchor, Agent 3C rejects it and loops directly back to Agent 4 with actionable critique (Max-1 pass). Once approved, the graph hands off to Memory Compression.
 
 ---
 
@@ -485,12 +501,12 @@ This function evaluates whether the Teacher needs fallback research:
                          │
                          │ (Conditional Edge: route_from_guardrail)
        ┌─────────────────┼─────────────────┐
-       ▼                 ▼                 ▼
- ┌───────────┐     ┌───────────┐     ┌───────────┐
- │ AGENT 3B  │     │  AGENT 2  │     │  AGENT 4  │
- │(Gap       │     │(Wavelength│     │ (Mentality│
- │ Analyzer) │     │  Setter)  │     │  Teacher) │
- └─────┬─────┘     └─────┬─────┘     └─────┬─────┘
+       ▼                 ▼                 │
+ ┌───────────┐     ┌───────────┐           │
+ │ AGENT 3B  │     │  AGENT 2  │           │
+ │(Gap       │     │(Wavelength│           │
+ │ Analyzer) │     │  Setter)  │           │
+ └─────┬─────┘     └─────┬─────┘           │
        │                 │ (Static)        │
        │                 ▼                 │
        │           ┌───────────┐           │

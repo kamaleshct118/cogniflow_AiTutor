@@ -256,6 +256,30 @@ class TeacherResponsePayload(BaseModel, extra="forbid"):
     socratic_question: SocraticQuestion = Field(..., description="Single targeted Socratic question")
 
 # ---------------------------------------------------------
+# AGENT 3C: QUALITY CRITIC SCHEMAS
+# ---------------------------------------------------------
+class ActionableFeedback(BaseModel):
+    critical_issues: List[str] = Field(default_factory=list, description="Specific problems identified in the Teacher draft.")
+    how_to_fix: List[str] = Field(default_factory=list, description="Clear, step-by-step instructions for the Teacher to fix the draft.")
+
+class QualityCriticPayload(BaseModel):
+    quality_passed: bool = Field(..., description="True if draft passes all quality & cognitive criteria, False if rewrite is required.")
+    overall_score: Optional[float] = Field(0.0, description="Overall audit score from 0.0 to 1.0.")
+    prompt_completeness_score: Optional[float] = Field(0.0, description="0.0 to 1.0 score on user query requirement coverage.")
+    anti_fluff_score: Optional[float] = Field(0.0, description="0.0 to 1.0 score on absence of conversational filler.")
+    profile_alignment_score: Optional[float] = Field(0.0, description="0.0 to 1.0 score on concrete anchor lead and cognitive DNA match.")
+    fact_grounding_score: Optional[float] = Field(0.0, description="0.0 to 1.0 score on proper research fact utilization.")
+    
+    question_completeness: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Detailed sub-scores for question answering.")
+    cognitive_alignment: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Detailed cognitive alignment checks (clause structure, concrete anchor, analogy domain).")
+    probe_evaluation: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Evaluation of user probe answer and teacher probe quality.")
+    evidence_ledger_audit: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Audit of evidence citations and fact grounding.")
+    anti_fluff: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Detailed anti-fluff checks.")
+    
+    actionable_feedback: Optional[ActionableFeedback] = Field(None, description="Structured critical issues and how-to-fix action steps.")
+    critique: Optional[str] = Field(None, description="Concise human-readable critique string for Teacher prompt injection.")
+
+# ---------------------------------------------------------
 # AGENT 5: GUARDRAIL SCHEMAS
 # ---------------------------------------------------------
 class GuardrailDecision(BaseModel, extra="forbid"):

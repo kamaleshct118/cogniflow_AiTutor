@@ -128,6 +128,23 @@ You MUST output a strictly valid JSON object with EXACTLY the following top-leve
     "knowledge_organization": {
       "dominant_pattern": "String summarizing how they represent prerequisites (hierarchical, associative).",
       "supporting_evidence_ids": ["E01"]
+    },
+    "learning_mechanism": {
+      "input_processing_style": {"pattern": "sequential_ingestion", "description": "Processes info in linear steps"},
+      "concept_anchoring": {"pattern": "example_dependent", "description": "Needs concrete code/tool anchor before abstractions"},
+      "information_integration": {"pattern": "selective", "description": "Integrates max 1-2 new concepts per exchange"}
+    },
+    "reasoning_style": {
+      "primary_mode": {"pattern": "mechanistic_causal", "description": "Reasons via cause-effect mechanism traces"},
+      "directionality": {"pattern": "forward_chaining", "description": "From physical trigger to effect"},
+      "hypothesis_handling": {"pattern": "single_hypothesis", "description": "Validates one path before branching"}
+    },
+    "error_recovery": {
+      "self_correction": {"pattern": "explicit_correction", "description": "Fixes errors when given concrete counter-example"},
+      "confusion_handling": {"pattern": "back_to_concrete", "description": "Requires resetting to concrete example when confused"}
+    },
+    "metacognition": {
+      "confidence_calibration": {"pattern": "well_calibrated", "description": "Hedging density matches technical certainty"}
     }
   },
   "reverse_engineered_model": {
@@ -148,6 +165,11 @@ You MUST output a strictly valid JSON object with EXACTLY the following top-leve
       "Constraint 1: TOPIC-INDEPENDENT, BRUTALLY SPECIFIC. e.g., 'Never introduce formal terminology before the user has seen the mechanism in action via a concrete trace. This user defines by doing, not by reading definitions.'",
       "Constraint 2: e.g., 'When explaining branching/conditional logic, always present the happy path first. This user builds understanding on the success case and then layers exceptions.'"
     ]
+  },
+  "teaching_blueprint": {
+    "universal_start": "First 50 words MUST be a concrete tool trace or code snippet.",
+    "universal_avoid": ["Abstract definitions opening", "Mathematical formulas opening", "Template conversational filler"],
+    "explanation_structure": "CONCRETE_ANCHOR → CAUSAL_TRACE → FORMAL_TERMINOLOGY → SOCRATIC_PROBE"
   }
 }
 ```

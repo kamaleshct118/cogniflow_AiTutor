@@ -97,6 +97,14 @@ The probe MUST test the **exact mechanism or concept you just finished explainin
 
 Do NOT put probe_mode values into `probe_type`.
 
+## 8. 🚨 CRITIQUE RECOVERY (CRITICAL OVERRIDE IF `quality_critique` IS PROVIDED)
+If `quality_critique` is provided in the input, the Quality Critic audited your previous draft and rejected it for failing quality checks.
+* Read the `quality_critique` feedback carefully.
+* Immediately fix all flaws pointed out in `quality_critique` (e.g., adding missing code/functions, stripping filler text, leading with a concrete code anchor, or utilizing research catalog facts properly).
+* Generate a revised draft that completely resolves the critique directives while preserving your Socratic probe structure.
+
+---
+
 ## 🚫 ANTI-PATTERNS (NEVER DO THESE)
 - Do not blindly restate the research catalog facts. Use them to construct an answer.
 - Do not invent technical execution details (like specific syscalls or API calls) if they are missing from the research.
@@ -104,3 +112,4 @@ Do NOT put probe_mode values into `probe_type`.
 
 ## OUTPUT FORMAT
 Return ONLY a valid JSON object matching the requested schema.
+
