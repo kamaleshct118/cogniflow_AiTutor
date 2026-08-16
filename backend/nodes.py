@@ -11,6 +11,7 @@
    ├── wavelength_setter_node   (Agent 2)  : Zoom scope selection & Tavily search query writing
    ├── research_node            (Agent 6)  : Tavily API execution & fact catalog population
    ├── teacher_node             (Agent 4)  : Socratic response synthesis & probe generation
+   ├── quality_critic_node      (Agent 3C) : Draft auditing, profile alignment & max-1 rewrite loop
    ├── memory_compressor_node   (Utility)  : 1KB ghost record compression & SQLite checkpointer
    └── gap_analyzer_node        (Agent 3B) : Historical path analysis & 1-click diagnostic cards
 ===============================================================================
@@ -37,17 +38,18 @@ from tavily import TavilyClient
 
 from cognitive.profile_schema import CognitiveEvent, CognitiveValidationPayload
 from cognitive.profile_reducer import apply_event_to_profile
+from config import get_next_tavily_key
 
 logger = logging.getLogger("syntapse.nodes")
 
-def call_gemini_api(system_instruction: str, user_content: str) -> Dict[str, Any]:
+def call_gemini_api(system_instruction: str, user_content: str, api_key: str = None, model_name: str = "gemini-pro-latest") -> Dict[str, Any]:
     """Helper to make live API calls to Gemini using standard urllib."""
-    key = os.getenv("MODEL_1_MAPPER_KEY")
+    key = api_key or os.getenv("MODEL_1_MAPPER_KEY")
     if not key:
         logger.error("No API Key found. Returning empty.")
         return {}
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
     
     payload = {
         "system_instruction": {"parts": [{"text": system_instruction}]},
@@ -270,6 +272,7 @@ def guardrail_node(state: SyntapseChamberState) -> Dict[str, Any]:
     print(f"    • Is Greeting: {is_greeting}")
     print(f"    • Is Meta Query: {is_meta}")
     print(f"    • Requires Deep Research: {requires_research}")
+    print("    ↳ State Keys Updated: [is_off_topic, is_greeting, is_meta, requires_deep_research]")
     print("="*50 + "\n")
     return {
         "is_off_topic": is_off_topic,
@@ -333,7 +336,10 @@ def wavelength_setter_node(state: SyntapseChamberState) -> Dict[str, Any]:
     print("\n" + "="*50)
     print(f" 📡 [AGENT 2 - WAVELENGTH SETTER]")
     print(f"    • Detected Wavelength: {payload.get('detected_wavelength')}")
-    print(f"    • Number of Queries: {len(payload.get('agent_6_queries', []))}")
+    print(f"    • Queries Generated:")
+    for q in payload.get('agent_6_queries', []):
+        print(f"      - {q.get('query')} (Depth: {q.get('search_depth')})")
+    print("    ↳ State Keys Updated: [search_plan]")
     print("="*50 + "\n")
     return {
         "search_plan": payload
@@ -396,7 +402,7 @@ def research_node(state: SyntapseChamberState) -> Dict[str, Any]:
         }
 
     # Execute Live Tavily Search for each query
-    tavily_key = os.getenv('TAVILY_KEY_1')
+    tavily_key = get_next_tavily_key()
     scraped_context = ""
     research_id = f"RESEARCH_{uuid.uuid4().hex[:8]}"
 
@@ -416,37 +422,40 @@ def research_node(state: SyntapseChamberState) -> Dict[str, Any]:
             "research_attempts": state.get("research_attempts", 0) + 1
         }
 
+    import concurrent.futures
+    
     tavily_client = TavilyClient(api_key=tavily_key)
-    for q_obj in queries[:2]: # Max 2 queries to save API limits/time
+    
+    def run_tavily_search(q_obj):
         if not isinstance(q_obj, dict):
-            continue
+            return ""
         q_text = q_obj.get("query", query)
         s_depth = q_obj.get("search_depth", "advanced")
         inc_domains = q_obj.get("include_domains", [])
         exc_domains = q_obj.get("exclude_domains", [])
         
+        local_context = ""
         try:
-            print(f"      -> [TAVILY SEARCHING]: '{q_text}'")
-            print(f"         - Search Depth: {s_depth}")
-            print(f"         - Included Domains: {inc_domains if inc_domains else 'None'}")
-            print(f"         - Excluded Domains: {exc_domains if exc_domains else 'None'}")
+            print(f"      -> [TAVILY SEARCHING CONCURRENTLY]: '{q_text}'")
             search_kwargs = {"query": q_text, "search_depth": s_depth, "max_results": 3, "include_answer": True}
-            if inc_domains:
-                search_kwargs["include_domains"] = inc_domains
-            if exc_domains:
-                search_kwargs["exclude_domains"] = exc_domains
+            if inc_domains: search_kwargs["include_domains"] = inc_domains
+            if exc_domains: search_kwargs["exclude_domains"] = exc_domains
                 
             response = tavily_client.search(**search_kwargs)
             
             if response.get("answer"):
-                scraped_context += f"SYNTHESIZED SEARCH ANSWER: {response.get('answer')}\n\n"
+                local_context += f"SYNTHESIZED SEARCH ANSWER: {response.get('answer')}\n\n"
             
             for res in response.get("results", []):
                 content = str(res.get('content', ''))[:3000]
-                scraped_context += f"Source: {res.get('url')}\nContent: {content}\n\n"
-                
+                local_context += f"Source: {res.get('url')}\nContent: {content}\n\n"
         except Exception as e:
             logger.error(f"Tavily Search Error for '{q_text}': {e}")
+        return local_context
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(run_tavily_search, queries[:2]))
+        scraped_context = "".join(results)
             
     if not scraped_context:
         return {
@@ -487,6 +496,10 @@ def research_node(state: SyntapseChamberState) -> Dict[str, Any]:
         }]
     
     print(f"    • Facts Retrieved: {len(new_facts)}")
+    if new_facts and new_facts[0].get('source_supported_facts'):
+        for i, f in enumerate(new_facts[0]['source_supported_facts'][:2]):
+            print(f"      - Fact {i+1}: {f.get('fact')[:80]}...")
+    print("    ↳ State Keys Updated: [research_catalog, research_id, requires_deep_research, research_attempts]")
     print("="*50 + "\n")
     return {
         "research_catalog": new_facts,
@@ -555,16 +568,16 @@ def teacher_node(state: SyntapseChamberState) -> Dict[str, Any]:
     
     # Profile Health Check
     has_full_profile = isinstance(profile, dict) and profile.get("tutor_directive")
-    print("\n--- [TEACHER PROFILE HEALTH] ---")
+    print("\n" + "="*50)
+    print(f" 🧑‍🏫 [AGENT 4 - TEACHER DRAFTING]")
+    print(f"    • Topic: {topic_name}")
+    print(f"    • Active Hypotheses: {len(active_hypotheses)}")
     if has_full_profile:
-        print("   ✅ Full cognitive profile available — personalized teaching active.")
-    elif isinstance(profile, dict) and profile:
-        print("   ⚠️  Partial profile (flat fields only) — no pedagogical telemetry available.")
-        print(f"      Profile keys: {list(profile.keys())}")
+        print(f"    • Profile Health: ✅ Active (Personalized Teaching)")
     else:
-        print("   ❌ No cognitive profile found — teaching in generic mode.")
-        print("      → User should run /calibrate to unlock personalized teaching.")
-    print("--------------------------------\n")
+        print(f"    • Profile Health: ❌ Missing or Partial (Generic Mode)")
+    print("    ↳ State Keys Updated: [messages, last_teacher_probe, last_teacher_response, active_cognitive_hypotheses, discussed_concepts]")
+    print("="*50 + "\n")
     
     teacher_context = {
         "active_hypotheses": active_hypotheses
@@ -627,10 +640,7 @@ def teacher_node(state: SyntapseChamberState) -> Dict[str, Any]:
         )
         system_instruction += override_text
     
-    # DEBUG: Print what the Teacher is actually receiving as pedagogical policy
-    print("\n--- [DEBUG: TEACHER POLICY PAYLOAD] ---")
-    print(json.dumps(teacher_context, indent=2))
-    print("---------------------------------------\n")
+    # (Teacher Policy Payload Debug Removed to prevent terminal clutter)
     
     teacher_memory = state.get("teacher_memory", [])
     
@@ -697,12 +707,14 @@ def teacher_node(state: SyntapseChamberState) -> Dict[str, Any]:
                 "expected_evidence": "mock evidence",
                 "failure_signal": "mock signal"
             }
-        }
-        
-    api_key = os.getenv("MODEL_4_TEACHER_KEY")
-    payload = call_groq_api(system_instruction, prompt, api_key=api_key, model_name="llama-3.3-70b-versatile")
+    if os.getenv("USE_GEMINI_TEACHER", "false").lower() == "true":
+        api_key = os.getenv("GEMINI_API_KEY")
+        payload = call_gemini_api(system_instruction, prompt, api_key=api_key, model_name="gemini-pro-latest")
+    else:
+        api_key = os.getenv("MODEL_4_TEACHER_KEY")
+        payload = call_groq_api(system_instruction, prompt, api_key=api_key, model_name="llama-3.3-70b-versatile")
     
-    print(f"      -> [TEACHER RAW PAYLOAD]: {payload}")
+    # (Raw payload print removed)
     if payload:
         try:
             validated = TeacherResponsePayload.model_validate(payload)
@@ -890,9 +902,17 @@ def cognitive_validator_node(state: SyntapseChamberState) -> Dict[str, Any]:
             api_key = os.getenv("MODEL_3_GAP_ANALYZER_KEY")
         payload = call_nvidia_api(system_instruction, prompt, api_key=api_key, model_name="meta/llama-3.1-8b-instruct")
     
-    print("\n   [AGENT 3 - COGNITIVE VALIDATOR EXECUTION]")
-    print(f"      -> Probe Answer Evaluated: \"{user_text}\"")
-    print(f"      -> Signal Output: {json.dumps(payload, indent=2)}\n")
+    print("\n" + "="*50)
+    print(f" 🧠 [AGENT 3A - COGNITIVE VALIDATOR]")
+    print(f"    • Probe Answer Evaluated: \"{user_text[:60]}...\"")
+    if payload and payload.get("pedagogical_signal"):
+        sig = payload["pedagogical_signal"]
+        print(f"    • Grade: {sig.get('response_quality')} | Effect: {sig.get('hypothesis_effect')} | Concept: {sig.get('target_concept')}")
+        print("    ↳ State Keys Updated: [cognitive_profile, cognitive_events, last_validation, last_teacher_probe]")
+    else:
+        print("    • Status: User did not answer probe directly.")
+        print("    ↳ State Keys Updated: [last_teacher_probe, last_validation]")
+    print("="*50 + "\n")
     
     if not payload or "pedagogical_signal" not in payload:
         return {"last_teacher_probe": None}
@@ -1010,6 +1030,14 @@ def gap_analyzer_node(state: SyntapseChamberState) -> Dict[str, Any]:
             "suggestions": [{"button_label": "Explore Advanced Mechanics", "search_query": "Advanced Mechanics"}]
         }
     
+    print("\n" + "="*50)
+    print(f" 🔍 [AGENT 3B - GAP ANALYZER]")
+    print(f"    • Gaps Identified: {len(payload.get('suggestions', []))}")
+    for sug in payload.get('suggestions', []):
+        print(f"      - {sug.get('button_label')}")
+    print("    ↳ State Keys Updated: [last_gap_analysis, trigger_gap_analysis, cognitive_events]")
+    print("="*50 + "\n")
+
     from datetime import datetime, timezone
     gap_event = {
         "event_type": "gap_analysis",
@@ -1036,8 +1064,8 @@ def quality_critic_node(state: SyntapseChamberState) -> Dict[str, Any]:
         return {"quality_critique": None}
         
     regeneration_count = state.get("quality_regeneration_count", 0)
-    if regeneration_count >= 1:
-        logger.info("Agent 3C: Max regeneration count reached (1). Approving response.")
+    if regeneration_count >= 2:
+        logger.info(f"Agent 3C: Max regeneration count reached ({regeneration_count}). Approving response.")
         return {"quality_critique": None}
         
     last_human_msg = get_latest_human_message(state)
@@ -1118,6 +1146,7 @@ def quality_critic_node(state: SyntapseChamberState) -> Dict[str, Any]:
                 
         if critique:
             print(f"    • Actionable Critique: \"{critique}\"")
+        print("    ↳ State Keys Updated: [quality_critique, quality_evaluation, quality_actionable_feedback, quality_regeneration_count]")
         print("="*65 + "\n")
         
         if not quality_passed and critique:
@@ -1188,6 +1217,7 @@ def memory_compressor_node(state: SyntapseChamberState) -> Dict[str, Any]:
         print(f" 🗜️ [MEMORY COMPRESSOR]")
         print(f"    • Compressed Teacher response to semantic ghost record.")
         print(f"    • Ghost Size: {len(json.dumps(ghost_obj))} bytes")
+        print("    ↳ State Keys Updated: [teacher_memory, research_attempts, last_teacher_response]")
         print("="*50 + "\n")
         return {
             "teacher_memory": [ghost_obj],

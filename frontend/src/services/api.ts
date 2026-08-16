@@ -321,7 +321,6 @@ export async function sendChat(
       const matched = TELEMETRY_SEQUENCE.find((s) => agentLabel.includes(s.agent));
       if (matched && matched.agent !== 'Agent 5') {
         onTelemetry(matched);
-        await new Promise((r) => setTimeout(r, 300));
       }
     }
 

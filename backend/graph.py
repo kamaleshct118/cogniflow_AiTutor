@@ -66,12 +66,12 @@ def route_from_quality_check(state: SyntapseChamberState) -> str:
     critique = state.get("quality_critique")
     regeneration_count = state.get("quality_regeneration_count", 0)
     
-    if critique and regeneration_count <= 1:
+    if critique and regeneration_count <= 2:
         print(f" 🔀 [ROUTER: QUALITY CHECK] ❌ Draft Failed Audit. Redraft Pass {regeneration_count} triggered. Routing back to Agent 4 (Teacher)...")
         return "teacher"
     
-    print(f" 🔀 [ROUTER: QUALITY CHECK] ✅ Draft Approved! Proceeding to Ghost Memory Compressor Utility Node...")
-    return "memory_compressor"
+    print(f" 🔀 [ROUTER: QUALITY CHECK] ✅ Draft Approved! Proceeding to END (Memory Compressor now runs async)...")
+    return END
 
 # --- BUILD THE LANGGRAPH ---
 
@@ -94,11 +94,12 @@ def build_syntapse_graph() -> StateGraph:
 
     # 3. Define the Control Flow Edges
     
-    # Every chat turn starts at the Cognitive Validator to check if the user is answering a probe
+    # Fan-out: Start both Cognitive Validator and Guardrail concurrently
     builder.add_edge(START, "cognitive_validator")
+    builder.add_edge(START, "guardrail")
     
-    # After validation, it flows to Guardrail
-    builder.add_edge("cognitive_validator", "guardrail")
+    # Cognitive Validator terminates its branch after updating the profile
+    builder.add_edge("cognitive_validator", END)
 
     # Guardrail conditionally routes to the appropriate next agent
     builder.add_conditional_edges(
@@ -127,18 +128,15 @@ def build_syntapse_graph() -> StateGraph:
         }
     )
 
-    # Quality Critic audits Teacher draft: loops back to Teacher on FAIL, or proceeds to Memory Compressor on PASS
+    # Quality Critic audits Teacher draft: loops back to Teacher on FAIL, or proceeds to END on PASS
     builder.add_conditional_edges(
         "quality_critic",
         route_from_quality_check,
         {
             "teacher": "teacher",
-            "memory_compressor": "memory_compressor"
+            END: END
         }
     )
-
-    # Memory Compressor cleans state and then ENDS the turn
-    builder.add_edge("memory_compressor", END)
 
     # Cognitive Validator is NOT a terminal node if it's the start node. 
     # But if manually triggered by the FAB, it can act as a loop. We handle manual triggers securely.
@@ -147,7 +145,9 @@ def build_syntapse_graph() -> StateGraph:
     builder.add_edge("gap_analyzer", END)
 
     # Compile the graph with persistent SQLite checkpointer (survives server restarts)
-    db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "syntapse_sessions.db"))
+    db_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "db"))
+    os.makedirs(db_dir, exist_ok=True)
+    db_path = os.path.join(db_dir, "syntapse_sessions.db")
     conn = sqlite3.connect(db_path, check_same_thread=False)
     memory = SqliteSaver(conn)
     graph = builder.compile(checkpointer=memory)

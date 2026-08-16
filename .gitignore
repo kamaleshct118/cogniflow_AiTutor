@@ -11,7 +11,7 @@ frontend/.env
 frontend/.env.local
 frontend/.env.production
 cognitive_profile.json
-
+.kiro
 # ── Python Bytecode & Cache ───────────────────────────────
 __pycache__/
 backend/__pycache__/
@@ -98,6 +98,7 @@ backend/*.db
 backend/*.db-shm
 backend/*.db-wal
 backend/*.db-*
+backend/db/
 
 # ── Temporary & Scratch Files ─────────────────────────────
 *.bak

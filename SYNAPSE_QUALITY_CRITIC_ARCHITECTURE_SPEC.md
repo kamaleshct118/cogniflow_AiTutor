@@ -13,9 +13,73 @@ Syntapse manages the entire user journey through 3 distinct phases:
 
 ---
 
-## 2. The Master Unified Execution Map
+## 2. Architectural Flow Diagrams
 
+### 2.1 Simplified High-Level Flow (For Easy Understanding)
+This diagram represents the conceptual, human-readable flow of how the agents collaborate to answer a single user message.
+
+```text
+       ┌───────────────┐
+       │ [User Speaks] │
+       └───────┬───────┘
+               │
+               ▼
+       ┌───────────────┐
+       │   AGENT 3A    │ ──► Grades previous Socratic probe
+       │  (Validator)  │
+       └───────┬───────┘
+               │
+               ▼
+       ┌───────────────┐
+       │   AGENT 5     │ ──► Checks safety & intent
+       │  (Guardrail)  │
+       └───────┬───────┘
+               │
+         ┌─────┴─────┐
+         │           │
+ [Needs Research]  [Simple Question]
+         │           │
+         ▼           │
+ ┌───────────────┐   │
+ │ AGENTS 2 & 6  │   │
+ │ (Web Search)  │   │
+ └───────┬───────┘   │
+         │           │
+         ▼           ▼
+ ┌───────┴───────────┴───┐
+ │       AGENT 4         │◄──┐
+ │      (Teacher)        │   │
+ │   Drafts the Answer   │   │
+ └───────────┬───────────┘   │
+             │               │
+             ▼               │
+ ┌───────────────────────┐   │
+ │       AGENT 3C        │   │
+ │   (Quality Critic)    │   │
+ │ Audits Teacher's draft│   │
+ └───────────┬───────────┘   │
+             │               │
+       ┌─────┴─────┐         │
+     [FAIL]      [PASS]      │
+ (Forces Rewrite)  │         │
+       │           │         │
+       └───────────┼─────────┘
+                   ▼
+           ┌───────────────┐
+           │ UTILITY NODE  │ ──► Saves 1KB context ghost
+           │(Ghost Memory) │
+           └───────┬───────┘
+                   │
+                   ▼
+                [ END ]
 ```
+
+---
+
+### 2.2 The Master Unified Execution Map (Complete Technical Flow)
+This diagram maps exactly to the strict LangGraph edge-routing defined in `backend/graph.py`, including conditional loops and fallback routes.
+
+```text
           [ONBOARDING: POST /calibrate]
                         │
                         ▼
@@ -32,7 +96,7 @@ Syntapse manages the entire user journey through 3 distinct phases:
             │ Chamber Setup & State │
             │ Profile Hydration     │
             └───────────┬───────────┘
-                        │ (Hydrates topic_name + profile)
+                        │
                         ▼
           [ACTIVE CHAT: POST /chat]
                         │
@@ -41,72 +105,71 @@ Syntapse manages the entire user journey through 3 distinct phases:
                         │
                         ▼
             ┌───────────────────────┐
-            │ AGENT 3A: Validator   │
+            │ AGENT 3A: Validator   │ (Grades Previous Socratic Probe)
             └───────────┬───────────┘
                         │
                         ▼
             ┌───────────────────────┐
-            │ AGENT 5: Guardrail    │
+            │ AGENT 5: Guardrail    │ (Safety & Intent Check)
             └───────────┬───────────┘
                         │
           ┌─────────────┴─────────────┐
           │   route_from_guardrail()  │
           └─────────────┬─────────────┘
-                        │
-            ┌───────────┴───────────┐
-            │                       │
-    (GAP ANALYSIS)            (CHAT TURN)
-            │                       │
-            ▼                       ▼
-      ┌───────────┐           ┌───────────┐
-      │ AGENT 3B  │           │ AGENT 4   │ (Initial Evaluation)
-      │ Gap Engine│           │ Teacher   │
-      └─────┬─────┘           └─────┬─────┘
-            │                       │
-         [ END ]         ┌──────────┴──────────┐
-                         │ Needs Web Research? │
-                         └──────────┬──────────┘
-                                    │
-                        ┌───────────┴───────────┐
-                    (YES)                      (NO)
-                        │                       │
-                        ▼                       │
-                  ┌───────────┐                 │
-                  │ AGENT 2   │                 │
-                  │ Wavelength│                 │
-                  └─────┬─────┘                 │
-                        │                       │
-                        ▼                       │
-                  ┌───────────┐                 │
-                  │ AGENT 6   │                 │
-                  │ Researcher│                 │
-                  └─────┬─────┘                 │
-                        │                       │
-                        └───────────┬───────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────► ┌───────────┐
-│                                   │ AGENT 4   │ (Drafting Phase)
-│                                   │ Teacher   │
-│                                   └─────┬─────┘
-│                                         │
-│                                         ▼
-│                                   ┌───────────┐
-│                                   │ AGENT 3C  │ (Quality Critic Node)
-│                                   │ Critic    │
-│                                   └─────┬─────┘
-│                                         │
-│                             ┌───────────┴───────────┐
-│                         (FAIL: count < 1)         (PASS: Approved)
-│                             │                       │
-└─────────────────────────────┘                       ▼
-                                                ┌───────────┐
-                                                │ Ghost     │ (Utility Node:
-                                                │ Memory    │  Compresses to ~1KB)
-                                                └─────┬─────┘
-                                                      │
-                                                      ▼
-                                                   [ END ]
+          ┌─────────────┼─────────────┐
+   (GAP ANALYSIS)  (RESEARCH)    (NO RESEARCH)
+          │             │             │
+          ▼             ▼             │
+    ┌───────────┐ ┌───────────┐       │
+    │ AGENT 3B  │ │ AGENT 2   │       │
+    │ Gap Engine│ │ Wavelength│       │
+    └─────┬─────┘ └─────┬─────┘       │
+          │             │             │
+       [ END ]          ▼             │
+                  ┌───────────┐       │
+                  │ AGENT 6   │       │
+                  │ Researcher│       │
+                  └─────┬─────┘       │
+                        │             │
+                        ▼             ▼
+                  ┌─────────────────────┐◄──────┐
+                  │ AGENT 4: Teacher    │       │
+                  │ (Response Engine)   │◄─┐    │
+                  └──────────┬──────────┘  │    │
+                             │             │    │
+                   ┌─────────┴─────────┐   │    │
+                   │ Needs Fallback    │   │    │
+                   │ Web Research?     │   │    │
+                   └────┬─────────┬────┘   │    │
+                        │         │        │    │
+                  (YES) │         │ (NO)   │    │
+                        ▼         │        │    │
+                  ┌───────────┐   │        │    │
+                  │ AGENT 2&6 │   │        │    │
+                  │ Fallback  │   │        │    │
+                  └─────┬─────┘   │        │    │
+                        │         │        │    │
+                        └─────────┼────────┘    │
+                                  ▼             │
+                        ┌──────────────────┐    │
+                        │ AGENT 3C: Critic │    │
+                        │ (Quality Audit)  │    │
+                        └─────────┬────────┘    │
+                                  │             │
+                      ┌───────────┴───────────┐ │
+                  (FAIL: count < 1)         (PASS)
+                      │                       │
+                      └───────────────────────┘
+                                              │
+                                              ▼
+                                    ┌──────────────────┐
+                                    │ UTILITY NODE:    │
+                                    │ Ghost Memory     │
+                                    │ Compressor       │
+                                    └─────────┬────────┘
+                                              │
+                                              ▼
+                                           [ END ]
 ```
 
 ---

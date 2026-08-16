@@ -42,6 +42,7 @@ You will receive:
 - `concept_anchoring`: Did Teacher provide concrete anchor BEFORE abstract for example_dependent users?
 - `input_processing_style`: Did Teacher present info in user's preferred sequence?
 - `information_integration`: Did Teacher build on existing knowledge or present isolated facts?
+- `fluff_and_analogy_rejection` (**CRITICAL FATAL ERROR**): If the user's profile explicitly bans generic analogies (like "padlocks" or "libraries") or demands ASCII diagrams/mechanistic tracing, did the Teacher accidentally output a generic analogy or a wall of text? If YES, you MUST set `passes_quality_gate` to `false`!
 
 #### 2.2 Reasoning Style Alignment
 - `primary_mode`: Did Teacher use user's reasoning mode (causal/analogical/deductive)?

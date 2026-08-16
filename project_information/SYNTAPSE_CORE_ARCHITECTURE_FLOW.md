@@ -30,6 +30,7 @@ To ensure strict content isolation while maintaining personalized learning, Synt
 * **Agent 4 (Mentality Teacher):** Synthesizes Dual-Layered responses (Analogy Bridge + Technical Anchor), autonomously delegating to Agent 6 when deep technical depth is required.
 * **Agent 5 (Guardrail Agent):** Inspects every user prompt to enforce topic boundary isolation and maintain topical diversity between chat rooms.
 * **Agent 6 (Research Agent):** Executes Google Searches, scrapes canonical data, deduplicates facts, and injects verified external source-grounded evidence into the Chamber Session Memory (this is treated as evidence, not absolute ground truth).
+* **Agent 3C (Quality Critic):** The final auditor. Intercepts the Teacher's draft to ensure it strictly follows the user's Cognitive Profile rules. If the Teacher fails to align, Agent 3C forces a rewrite loop.
 
 ---
 
@@ -54,9 +55,9 @@ When a user clicks **"+ New Chat"**, a Model Card appears with the following con
 
 ### Phase 3: The Mentality Chat Loop & Dynamic Depth
 1. **User asks a question** in the active chat.
-2. **Agent 5 (Guardrail Agent)** intercepts the query. It verifies the query belongs to the current chamber's topic. If the user tries to pivot to an unrelated topic, Agent 5 blocks the pivot and prompts the user to open a new chat card.
-3. **Dynamic Depth Check:** If the question is in-bounds, the system evaluates depth. If the user asks a highly complex technical question not covered in the Pre-Fetch data, **Agent 4 (Teacher)** autonomously tasks **Agent 6 (Researcher)** to fetch real-time high-quality data.
-4. **Response Generation:** Agent 4 synthesizes the final response using the Global Cognitive Profile, ensuring the answer is delivered via the user's preferred analogies and structural pacing.
+2. **Agent 5 (Guardrail Agent)** intercepts the query. It verifies topic safety and performs a **Proactive Depth Check**. If the query requires complex technical APIs or obscure facts, the Guardrail instantly routes directly to Agent 2 and Agent 6 for research *before* the Teacher wakes up.
+3. **Reactive Depth Check (Fallback):** If Guardrail didn't catch it, **Agent 4 (Teacher)** starts drafting. If it realizes it lacks facts mid-draft, it autonomously triggers a fallback loop to **Agent 6 (Researcher)**.
+4. **Response Generation & Quality Audit:** Agent 4 synthesizes the draft using the Global Cognitive Profile. Before the user sees it, **Agent 3C (Quality Critic)** ruthlessly audits the draft against the user's DNA. If approved, it is displayed. If rejected, it forces the Teacher to rewrite it.
 
 ### Phase 4: Dynamic Knowledge Gap Analysis (The FAB)
 At *any* point in the conversation, the user can click the persistent **Floating Action Button (FAB) `[ ⚡ Analyze Knowledge Gap ]`**.

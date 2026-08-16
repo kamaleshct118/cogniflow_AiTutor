@@ -3,7 +3,7 @@
 > **Skill Name:** `gap-analyzer-vr-holy-grail`  
 > **System Identification:** `syntapse.agents.gap_analyzer.v5`  
 > **Target Component:** FAB Logic Agent (The Auditor)  
-> **Runtime Strategy:** Mid-Session Interruption | Gemini 3.1 Pro Native JSON Mode  
+> **Runtime Strategy:** Mid-Session Interruption | NVIDIA Llama 3.1 8B Native JSON Mode  
 > **Core Purpose:** Diff the user's chat history against the canonical topic structure to identify missing concepts, outputting an actionable diagnostic summary with interactive suggestion buttons.
 
 ---

@@ -208,7 +208,7 @@ A manual UI button (*"Reveal What I Missed"*) triggers a background LangGraph pi
 ## 6. Technology Stack & Implementation Mapping
 
 * **Orchestration:** LangGraph (State machine routing across Profiler, Guardrail, Teacher, Auditor, and Memory Compressor nodes).
-* **LLM Engine:** Gemini 1.5 Pro / 3.6 Flash via Google Generative AI SDK (High context window & structural JSON adherence).
+* **LLM Engine:** Groq (Llama 3.3 70B) and NVIDIA NIM (Llama 3.1 8B / Nemotron) (High context window & structural JSON adherence).
 * **Search Engine:** Tavily API / Google Custom Search API.
 * **Vector Store:** ChromaDB (Local vector search for `additional_info` deduplication).
 * **Backend Framework:** Python (FastAPI / Flask).

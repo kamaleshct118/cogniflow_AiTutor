@@ -153,6 +153,18 @@ The graph routes this payload through the following nodes in strict order.
   }
   ```
 
+### Agent 3C – **Quality Critic**
+- **File:** `backend/nodes.py` → `quality_critic_node()`
+- **Model:** NVIDIA `meta/llama-3.1-8b-instruct`
+- **Trigger:** Immediately after Teacher drafts a response.
+- **Purpose:** Audits the Teacher's draft against the user's `cognitive_profile` (Mind Blueprint) to ensure rules (like starting with a concrete anchor) were followed.
+- **Processing Steps:**
+  1. Compares draft against `tutor_directive` and `teaching_blueprint`.
+  2. Evaluates anti-fluff, fact grounding, and concept pacing.
+  3. Returns `PASS` or `FAIL`.
+- **Output:** `{ "quality_passed": bool, "critique": "...", "critical_issues": [...] }`
+- **Loop:** If `FAIL`, the graph routes back to the Teacher for a mandatory rewrite (max 1 rewrite pass).
+
 ---
 
 ## ⚙️ Phase 2: Utilities & Auditing
@@ -203,10 +215,15 @@ flowchart TD
     B --> C[Guardrail]
     C -->|LEARNING| D[Teacher]
     C -->|REQUIRES_DEEP_RESEARCH| E[Wavelength Setter]
+    C -->|trigger_gap_analysis| K[Gap Analyzer]
     E --> F[Researcher]
     F --> D
-    D --> G[Memory Compressor]
+    D -->|requires_research_fallback| E
+    D -->|draft_ready| L[Quality Critic]
+    L -->|FAIL| D
+    L -->|PASS| G[Memory Compressor]
     G --> H[END]
+    K --> H
     C -->|OFF_TOPIC| D
     C -->|CONVERSATIONAL_GREETING| I[Static Greeting]
     C -->|META_QUERY| J[Static Meta Response]

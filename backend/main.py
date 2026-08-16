@@ -20,7 +20,7 @@ import os
 import json
 import logging
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel
@@ -28,6 +28,7 @@ from typing import Optional, Dict, Any, List
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from graph import syntapse_app
+from nodes import memory_compressor_node
 from orchestrator import live_agent_1_mapper
 from cognitive.profile_compiler import compile_raw_profile
 
@@ -257,8 +258,19 @@ async def get_session_state(session_id: str):
         logger.error(f"Error retrieving session state: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+def run_memory_compressor_bg(session_id: str):
+    config = {"configurable": {"thread_id": session_id}}
+    try:
+        current_state = syntapse_app.get_state(config)
+        if current_state and current_state.values:
+            updates = memory_compressor_node(current_state.values)
+            if updates:
+                syntapse_app.update_state(config, updates)
+    except Exception as e:
+        logger.error(f"Background memory compressor failed: {e}")
+
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, background_tasks: BackgroundTasks):
     """
     Phase 1: Processes a single chat turn through the Syntapse Multi-Agent graph.
     """
@@ -318,6 +330,8 @@ async def chat(request: ChatRequest):
             print(f"    • Probe Question    : \"{probe.get('question')}\"")
         print("="*60 + "\n")
         
+        background_tasks.add_task(run_memory_compressor_bg, request.session_id)
+        
         return ChatResponse(
             session_id=request.session_id,
             message=response_msg,
@@ -342,7 +356,10 @@ async def delete_session(session_id: str):
     print(f" 🗑️  [DELETE /session/{session_id}] Chamber Wipe Requested")
     try:
         import sqlite3
-        conn = sqlite3.connect("./syntapse_sessions.db")
+        import os
+        db_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "db"))
+        db_path = os.path.join(db_dir, "syntapse_sessions.db")
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         # Delete from both langgraph tables
         cursor.execute("DELETE FROM checkpoints WHERE thread_id = ?", (session_id,))

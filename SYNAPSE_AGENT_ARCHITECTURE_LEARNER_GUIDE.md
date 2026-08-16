@@ -231,7 +231,6 @@ User Answers Socratic Probe
                                                                  ▼
                                                               [ END ]
 ```
-```
 
 ---
 
@@ -447,6 +446,16 @@ This function evaluates whether the Teacher needs fallback research:
 
 ---
 
+### AGENT 3C: Quality Critic (Draft Auditor)
+* **Question It Answers**: *"Did the Teacher actually follow the user's cognitive rules, or did it write generic fluff?"*
+* **When It Runs**: Immediately after AGENT 4 drafts a response.
+* **Inputs**: Teacher's draft + Cognitive Profile (`tutor_directive`) + `research_catalog`.
+* **Task**: Ruthlessly audits the Teacher's draft. If the draft lacks a concrete anchor, has fluff, or ignores constraints, the Critic rejects it and forces the Teacher to rewrite.
+* **Outputs**: `quality_critique` feedback and a `PASS/FAIL` flag.
+* **Destination**: If FAIL, loops back to AGENT 4. If PASS, routes to Ghost Memory Compressor.
+
+---
+
 ### UTILITY NODE: Ghost Memory Compressor (Context Window Optimizer)
 * **Question It Answers**: *"How do we keep conversation history lightweight so context limits are never breached?"*
 * **When It Runs**: After AGENT 4 response when no further research is needed, right before graph termination (`END`).
@@ -484,52 +493,28 @@ This function evaluates whether the Teacher needs fallback research:
 
 ### 6.1 LangGraph Node & Edge Architecture
 
-```
-                      [START]
-                         │
-                         │ (Static Edge)
-                         ▼
-             ┌───────────────────────┐
-             │  AGENT 3A             │  (Cognitive Validator)
-             └───────────┬───────────┘
-                         │
-                         │ (Static Edge)
-                         ▼
-             ┌───────────────────────┐
-             │  AGENT 5              │  (Scope Guardrail)
-             └───────────┬───────────┘
-                         │
-                         │ (Conditional Edge: route_from_guardrail)
-       ┌─────────────────┼─────────────────┐
-       ▼                 ▼                 │
- ┌───────────┐     ┌───────────┐           │
- │ AGENT 3B  │     │  AGENT 2  │           │
- │(Gap       │     │(Wavelength│           │
- │ Analyzer) │     │  Setter)  │           │
- └─────┬─────┘     └─────┬─────┘           │
-       │                 │ (Static)        │
-       │                 ▼                 │
-       │           ┌───────────┐           │
-       │           │  AGENT 6  │           │  (Deep Researcher)
-       │           └─────┬─────┘           │
-       │                 │ (Static)        │
-       │                 └──────────┐      │
-       │                            ▼      ▼
-       │                    ┌───────────────────┐
-       │                    │  AGENT 4          │ (Mentality Teacher)
-       │                    └─────────┬─────────┘
-       │                              │
-       │                              │ (Conditional Edge: route_from_teacher)
-       │                        ┌─────┴─────┐
-       │                        ▼           ▼
-       │                  ┌───────────┐ ┌───────────────────┐
-       │                  │  AGENT 2  │ │ Utility Node      │
-       │                  │(Wavelength│ │ Ghost Memory      │
-       │                  │  Setter)  │ │ Compressor        │
-       │                  └───────────┘ └─────────┬─────────┘
-       │                  (max 2 loops)           │ (Static Edge)
-       ▼                                          ▼
-     [END]                                      [END]
+```mermaid
+flowchart TD
+    START((START)) --> A3A["AGENT 3A (Validator)"]
+    A3A --> A5["AGENT 5 (Guardrail)"]
+    
+    A5 -- "trigger_gap_analysis" --> A3B["AGENT 3B (Gap Analyzer)"]
+    A3B --> END_GAP((END))
+    
+    A5 -- "requires_deep_research" --> A2["AGENT 2 (Wavelength Setter)"]
+    A2 --> A6["AGENT 6 (Deep Researcher)"]
+    A6 --> A4["AGENT 4 (Mentality Teacher)"]
+    
+    A5 -- "Fast Path / Off Topic" --> A4
+    
+    A4 -- "fallback research (attempts < 2)" --> A2
+    
+    A4 -- "draft_ready" --> A3C["AGENT 3C (Quality Critic)"]
+    
+    A3C -- "FAIL (Max 1 Loop)" --> A4
+    A3C -- "PASS" --> COMP["Ghost Memory Compressor"]
+    
+    COMP --> END_TURN((END))
 ```
 
 #### Detailed Edge Definition Table:
@@ -541,7 +526,8 @@ This function evaluates whether the Teacher needs fallback research:
 | `AGENT 5` | `AGENT 3B` / `AGENT 2` / `AGENT 4` | **Conditional** | `route_from_guardrail()` evaluates flags |
 | `AGENT 2` | `AGENT 6` (Researcher) | **Static** | Search plan with queries passed directly to Researcher |
 | `AGENT 6` | `AGENT 4` (Teacher) | **Static** | Fact catalog passed directly to Teacher |
-| `AGENT 4` | `AGENT 2` / `Compressor` | **Conditional** | `route_from_teacher()` loops back to AGENT 2 if fallback research needed; otherwise routes to Compressor |
+| `AGENT 4` | `AGENT 2` / `AGENT 3C` | **Conditional** | `route_from_teacher()` loops back to AGENT 2 if fallback research needed; otherwise routes to Quality Critic |
+| `AGENT 3C` | `AGENT 4` / `Compressor` | **Conditional** | `route_from_quality_check()` loops back to AGENT 4 on FAIL; routes to Compressor on PASS |
 | `Compressor` | `END` | **Static** | Cleaned state saved; turn terminates |
 | `AGENT 3B` | `END` | **Static** | Diagnostic card response returned; turn terminates |
 
@@ -550,34 +536,38 @@ This function evaluates whether the Teacher needs fallback research:
 ### 6.2 Agent-by-Agent Reducer Interaction & State Flow Diagram
 
 ```
-                                    ┌──────────────────────────────────────────────────────────┐
-                                    │               SyntapseChamberState                       │
-                                    │                     (BLACKBOARD)                         │
-                                    │  • messages: Annotated[list, add_messages]               │
-                                    │  • research_catalog: Annotated[list, append_research]   │
-                                    │  • teacher_memory: Annotated[list, append_research]      │
-                                    │  • cognitive_events: Annotated[list, append_research]    │
-                                    │  • cognitive_profile: dict (Bayesian Weighted)           │
-                                    │  • topic_name & user_topic_context: str (Grounding)      │
-                                    │  • Orchestration Flags & Probe States: dict / bool       │
-                                    └────────────────────────────┬─────────────────────────────┘
-                                                                 │
-      ┌─────────────────┬─────────────────┬──────────────┬───────┴──────┬──────────────┬─────────────────┬─────────────────┐
-      │                 │                 │              │              │              │                 │                 │
-      ▼                 ▼                 ▼              ▼              ▼              ▼                 ▼                 ▼
-┌───────────┐     ┌───────────┐     ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐     ┌───────────┐     ┌───────────┐
-│ AGENT 1   │     │ AGENT 3A  │     │ AGENT 5   │  │ AGENT 2   │  │ AGENT 6   │  │ AGENT 4   │     │ COMPRESSOR│     │ AGENT 3B  │
-│ (Mapper)  │     │(Validator)│     │(Guardrail)│  │(Wavelength│  │(Research) │  │ (Teacher) │     │   NODE    │     │ (Gap Ana) │
-└─────┬─────┘     └─────┬─────┘     └─────┬─────┘  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘     └─────┬─────┘     └─────┬─────┘
-      │                 │                 │              │              │              │                 │                 │
-      │ Overwrites      │ Overwrites      │ Overwrites   │ Overwrites   │ Appends      │ Appends         │ Appends 1KB     │ Overwrites
-      │ cognitive_      │ last_valid-     │ routing      │ search_plan  │ facts to     │ AIMessage to    │ ghost record    │ last_gap_
-      │ profile         │ ation & updates │ profile weights │ flags        │ (Queries)    │ catalog      │ messages; sets  │ to teacher_     │ analysis
-      │                 │ profile weights │ flags        │ (Queries)    │ catalog      │ new probe       │ memory          │ dict
-      ▼                 ▼                 ▼              ▼              ▼              ▼                 ▼                 ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                 SHARED STATE BLACKBOARD REDUCTION                                                │
-└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+=========================================================================================
+                    SyntapseChamberState (SHARED STATE BLACKBOARD)
+-----------------------------------------------------------------------------------------
+ • messages: Annotated[list]             • cognitive_profile: dict (Bayesian Weighted)
+ • research_catalog: Annotated[list]     • topic_name & context: str
+ • teacher_memory: Annotated[list]       • Routing Flags: bool (is_off_topic, etc)
+ • cognitive_events: Annotated[list]     • Probe States: dict (last_probe, etc)
+=========================================================================================
+      ▲               ▲               ▲               ▲               ▲               ▲
+      │               │               │               │               │               │
+ [OVERWRITES]     [APPENDS]       [APPENDS]       [APPENDS]     [OVERWRITES]    [OVERWRITES]
+  Profile        Events Log      Facts to        Response to     Critic Pass    Gap Analysis
+  & Flags        & Validation    Catalog         Messages        /Fail Flags    Summary Dict
+      │               │               │               │               │               │
+┌─────┴─────┐   ┌─────┴─────┐   ┌─────┴─────┐   ┌─────┴─────┐   ┌─────┴─────┐   ┌─────┴─────┐
+│ AGENT 1   │   │ AGENT 3A  │   │ AGENT 6   │   │ AGENT 4   │   │ AGENT 3C  │   │ AGENT 3B  │
+│ (Mapper)  │   │(Validator)│   │(Research) │   │ (Teacher) │   │ (Critic)  │   │ (Gap Ana) │
+└───────────┘   └───────────┘   └───────────┘   └───────────┘   └───────────┘   └───────────┘
+
+         ┌───────────┐         ┌───────────┐         ┌───────────┐
+         │ AGENT 5   │         │ AGENT 2   │         │ COMPRESSOR│
+         │(Guardrail)│         │(Wavelength│         │   NODE    │
+         └─────┬─────┘         └─────┬─────┘         └─────┬─────┘
+               │                     │                     │
+          [OVERWRITES]          [OVERWRITES]          [APPENDS]
+          Routing Flags         search_plan           1KB ghost record
+          (is_off_topic)        queries dict          to teacher_memory
+               │                     │                     │
+               ▼                     ▼                     ▼
+=========================================================================================
+                                SHARED STATE REDUCER
+=========================================================================================
 ```
 
 #### State Blackboard Field Specifications:
@@ -654,8 +644,9 @@ This function evaluates whether the Teacher needs fallback research:
 | **Layer 5: Search Plan**| AGENT 2 (Wavelength) | `search_plan` | Overwrite | Overwrites structured domain-filtered search queries plan |
 | **Layer 6: Research** | AGENT 6 (Researcher) | `research_catalog` | `append_research` (List Append) | Concatenates new Tavily search facts into accumulated facts array |
 | **Layer 7: Teacher** | AGENT 4 (Teacher) | `messages`, `last_teacher_probe` | `add_messages` / Overwrite | Appends `AIMessage` explanation; updates active Socratic probe |
-| **Layer 8: Compression**| Ghost Memory Compressor| `teacher_memory` | `append_research` (List Append) | Appends 1KB ghost record for long-term lightweight context |
-| **Layer 9: Diagnostics**| AGENT 3B (Gap Analyzer)| `last_gap_analysis` | Target Overwrite | Analyzes `user_exploration_path` + `cognitive_events` + `teacher_memory` ──► Overwrites `diagnostic_summary` & `suggestions` list (`button_label`, `search_query`) |
+| **Layer 8: Audit** | AGENT 3C (Critic) | `quality_critique` | Overwrite | Audits draft. If FAIL, loops back to Teacher. |
+| **Layer 9: Compression**| Ghost Memory Compressor| `teacher_memory` | `append_research` (List Append) | Appends 1KB ghost record for long-term lightweight context |
+| **Layer 10: Diagnostics**| AGENT 3B (Gap Analyzer)| `last_gap_analysis` | Target Overwrite | Analyzes `user_exploration_path` + `cognitive_events` + `teacher_memory` ──► Overwrites `diagnostic_summary` & `suggestions` list (`button_label`, `search_query`) |
 
 ---
 

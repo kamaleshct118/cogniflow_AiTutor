@@ -87,8 +87,14 @@ def run_connection_tests():
     # 3. Test Gap Analyzer (NVIDIA Llama 3.1)
     print("Agent 3 (Gap Analyz - NVIDIA):", test_nvidia(os.getenv("MODEL_3_GAP_ANALYZER_KEY"), "GapAnalyzer", "meta/llama-3.1-8b-instruct"))
     
-    # 4. Test Teacher (Groq Llama 3.3)
-    print("Agent 4 (Teacher - Groq):    ", test_groq(os.getenv("MODEL_4_TEACHER_KEY"), "Teacher", "llama-3.3-70b-versatile"))
+    # 3C. Test Quality Critic (NVIDIA Llama 3.1)
+    print("Agent 3C (Critic - NVIDIA):  ", test_nvidia(os.getenv("MODEL_3C_QUALITY_CRITIC_KEY"), "QualityCritic", "meta/llama-3.1-8b-instruct"))
+    
+    # 4. Test Teacher (Dynamic Switch)
+    if os.getenv("USE_GEMINI_TEACHER", "false").lower() == "true":
+        print("Agent 4 (Teacher - Gemini):  ", test_gemini(os.getenv("GEMINI_API_KEY"), "Teacher", "gemini-pro-latest"))
+    else:
+        print("Agent 4 (Teacher - Groq):    ", test_groq(os.getenv("MODEL_4_TEACHER_KEY"), "Teacher", "llama-3.3-70b-versatile"))
     
     # 5. Test Guardrail (Groq Llama 3.3)
     print("Agent 5 (Guardrail - Groq):  ", test_groq(os.getenv("MODEL_5_GUARDRAIL_KEY"), "Guardrail", "llama-3.3-70b-versatile"))

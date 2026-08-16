@@ -7,9 +7,12 @@ import SocraticProbeCard from './SocraticProbeCard';
 
 function parseInlineContent(text: string): string {
   return text
-    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded-md bg-[var(--surface-2)] border border-[var(--surface-border)] text-[var(--accent-amber)] text-xs font-mono">$1</code>')
+    // Match inline code blocks, reducing vertical padding to fix line-height
+    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-[1px] rounded bg-[var(--surface-2)] border border-[var(--surface-border)] text-[var(--accent-amber)] text-xs font-mono">$1</code>')
+    // Bold matching
     .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-[var(--text-primary)]">$1</strong>')
-    .replace(/_([^_]+)_/g, '<em class="italic text-[var(--text-secondary)]">$1</em>')
+    // Italic matching: Use lookarounds to ensure we only match underscores surrounded by boundaries, NOT inside variable names like code_challenge
+    .replace(/(?<!\w)_([a-zA-Z0-9 ]+?)_(?!\w)/g, '<em class="italic text-[var(--text-secondary)]">$1</em>')
     .replace(/\n/g, '<br/>');
 }
 

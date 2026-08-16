@@ -46,9 +46,9 @@ def get_next_tavily_key():
 # =====================================================================
 # Distributing API keys and Model weights to prevent token rate-limiting
 # and optimize latency/cost.
-# Heavy Load -> Google Gemini 1.5 Pro
-# Medium Load -> Google Gemini 1.5 Flash
-# Fast/Light Load -> Groq & NVIDIA NIM (Llama 3)
+# Heavy Load -> Groq Llama 3.3 70B
+# Medium Load -> Groq Llama 3.3 70B
+# Fast/Light Load -> NVIDIA NIM (Llama 3.1 8B Instruct)
 # =====================================================================
 
 # --- AGENT 1: COGNITIVE MAPPER (HEAVY LOAD) ---

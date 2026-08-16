@@ -22,7 +22,7 @@ import urllib.error
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROMPT_SKILLS_DIR = BASE_DIR / "prompt_skills"

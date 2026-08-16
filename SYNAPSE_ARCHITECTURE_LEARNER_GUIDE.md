@@ -302,7 +302,25 @@ Based on the Guardrail flags, the query takes one of four paths:
 }
 ```
 
-**Where it goes next:** The Memory Compressor. If `requires_research_fallback == True`, the graph loops back to Agent 2 (max 2 times).
+**Where it goes next:** Agent 3C (Quality Critic). If `requires_research_fallback == True`, the graph loops back to Agent 2 instead.
+
+---
+
+#### Step 6.5: Agent 3C (Quality Critic) — The Question It Answers
+
+**"Did the Teacher follow the rules, or is this generic fluff?"**
+
+**When it runs:** Immediately after the Teacher drafts a response.
+
+**Why it exists:** Even smart LLMs sometimes slip into generic "textbook" tones or forget to use the user's preferred analogies. The Critic is a harsh editor that forces the Teacher to stay in character.
+
+**What it actually does:**
+1. Compares the Teacher's draft against the user's `cognitive_profile` rules.
+2. Checks for fluff, corporate boilerplates, and missing concrete anchors.
+3. If the draft fails, it sends a harsh critique back to the Teacher and forces a rewrite (maximum 1 retry).
+4. If it passes, it approves the message.
+
+**Where it goes next:** If FAIL, loops back to Agent 4 (Teacher). If PASS, proceeds to the Memory Compressor.
 
 ---
 
@@ -481,7 +499,21 @@ Here's every agent in the system, with consistent explanation format:
 | **Incoming inputs** | User input + research catalog + cognitive profile + teacher memory |
 | **Key processing task** | Injects cognitive DNA into prompt, generates personalized explanation using concrete-to-abstract laddering, creates typed Socratic probe |
 | **Output data & format** | `answer` (markdown), `explanation_depth`, `concepts_covered[]`, `evidence_boundary`, `socratic_question` object, `requires_research_fallback` |
-| **Destination** | Ghost Memory Compressor — may loop back to Agent 2 if fallback needed |
+| **Destination** | Agent 3C (Quality Critic) — may loop back to Agent 2 if fallback needed |
+
+---
+
+### Agent 3C: Quality Critic (Draft Auditor)
+
+| Field | Description |
+|-------|-------------|
+| **The question it answers** | "Did the Teacher follow the cognitive profile rules?" |
+| **When it runs** | Immediately after Agent 4 drafts an answer |
+| **Why it exists** | To prevent generic AI fluff and enforce strict pedagogical alignment |
+| **Incoming inputs** | Teacher draft + Cognitive Profile |
+| **Key processing task** | Audits for concrete anchors, fluff removal, and rule adherence |
+| **Output data & format** | `PASS/FAIL` flag and `quality_critique` string |
+| **Destination** | If FAIL, loops back to Teacher. If PASS, goes to Memory Compressor |
 
 ---
 
@@ -653,7 +685,8 @@ The frontend stores session metadata (topic name, turn count) in browser localSt
 | 3a | **Gap Analyzer (3B)** | "What are you missing?" | Compressor → END |
 | 3b | **Teacher (short)** | "Polite redirect" | Compressor → END |
 | 3c | **Wavelength (2) → Researcher (6) → Teacher** | "Search, then explain" | Compressor → END |
-| 3d | **Teacher (full)** | "Personalized explanation + probe" | Compressor → END |
+| 3d | **Teacher (full)** | "Personalized explanation + probe" | Quality Critic |
+| 3e | **Quality Critic (3C)** | "Did you follow the rules?" | Compressor (or Loop to Teacher) |
 | 4 | **Compressor** | "Keep context lean" | END |
 | Loop | — | "Need more research?" | Back to Wavelength (max 2×) |
 
@@ -670,6 +703,7 @@ The frontend stores session metadata (topic name, turn count) in browser localSt
 | Agent 2 (Wavelength) | ✅ Working | Query building |
 | Agent 6 (Researcher) | ✅ Working | Web search + synthesis |
 | Agent 4 (Teacher) | ✅ Working | Full Socratic generation |
+| Agent 3C (Critic) | ✅ Working | Audits and enforces rewrites |
 | Memory Compressor | ✅ Working | Token optimization |
 | SQLite persistence | ✅ Working | Survives restarts |
 | Cognitive feedback loop | ❌ Dormant | Needs one wire to activate |

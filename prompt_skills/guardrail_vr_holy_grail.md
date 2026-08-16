@@ -3,7 +3,7 @@
 > **Skill Name:** `guardrail-vr-holy-grail`  
 > **System Identification:** `syntapse.agents.guardrail.v5`  
 > **Target Component:** Agent 5 (The Boundary Bouncer)  
-> **Runtime Strategy:** Pre-Generation Filter | Gemini 3.1 Pro Native JSON Mode  
+> **Runtime Strategy:** Pre-Generation Filter | Groq Llama 3.3 70B Native JSON Mode  
 > **Core Purpose:** Intercept every user message to enforce strict single-topic isolation. Prevent prompt drift, jailbreaks, and off-topic pivots while explicitly allowing cross-domain metaphors.
 
 ---
