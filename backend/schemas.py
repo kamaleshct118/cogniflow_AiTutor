@@ -216,28 +216,28 @@ class TransferReadiness(BaseModel):
     analogical_bridging: Dict[str, Any] = Field(default_factory=dict)
     cross_domain_application: Dict[str, Any] = Field(default_factory=dict)
 
-class MentalBlueprint(BaseModel):
-    primary_entry_point: str = ""
-    cognitive_sequence: str = ""
-    bottleneck: str = ""
+class InitializationState(BaseModel):
+    required_inputs: List[str] = Field(default_factory=list)
+    on_missing_input: str = ""
 
-class TransferPrediction(BaseModel):
-    when_new_topic: str = ""
-    automatic_behavior: str = ""
-    strength_leverage: str = ""
-    trap_avoidance: str = ""
+class ExecutionNode(BaseModel):
+    state_id: str
+    action: str
+    required_format: str
+    success_condition: str
 
-class FrictionPoint(BaseModel):
-    friction_type: str
-    trigger: str
-    manifestation: str
-    mitigation: str
+class ConditionalGate(BaseModel):
+    if_input_contains: str
+    then: str
 
-class ReverseEngineeredModel(BaseModel):
-    mental_blueprint: MentalBlueprint = Field(default_factory=MentalBlueprint)
-    transfer_prediction: TransferPrediction = Field(default_factory=TransferPrediction)
-    predicted_friction_points: List[FrictionPoint] = Field(default_factory=list)
-    compression_expansion_profile: str = ""
+class TerminationCondition(BaseModel):
+    understanding_achieved_when: str
+
+class CognitiveStateMachine(BaseModel):
+    initialization_state: InitializationState = Field(default_factory=InitializationState)
+    execution_nodes: List[ExecutionNode] = Field(default_factory=list)
+    conditional_gates: List[ConditionalGate] = Field(default_factory=list)
+    termination_condition: TerminationCondition = Field(default_factory=TerminationCondition)
 
 class ProbeStrategy(BaseModel):
     when_to_probe: str = ""
@@ -296,8 +296,8 @@ class CognitiveDna(BaseModel):
 
 class CognitiveProfilePayload(BaseModel):
     cognitive_dna: CognitiveDna
-    reverse_engineered_model: ReverseEngineeredModel
-    tutor_directive: TutorDirective
+    cognitive_state_machine: CognitiveStateMachine
+    modal_text: str = ""
 
 
 # ---------------------------------------------------------
@@ -334,7 +334,13 @@ class SocraticQuestion(BaseModel, extra="forbid"):
 class TeacherProbe(SocraticQuestion):
     probe_id: str
 
+class PedagogicalStrategy(BaseModel):
+    initialization_check: str = Field(..., description="Verify if the required inputs for the user's state machine are present.")
+    execution_trace: str = Field(..., description="Explicitly map the topic through the user's execution_nodes.")
+    conditional_gate_evaluation: str = Field(..., description="Evaluate the planned response against the user's conditional gates to prevent cognitive friction.")
+
 class TeacherResponsePayload(BaseModel, extra="forbid"):
+    pedagogical_strategy: PedagogicalStrategy = Field(..., description="The internal reasoning and planning phase BEFORE generating the answer.")
     requires_research_fallback: Optional[bool] = False
     answer: str = Field(..., description="The natural, seamlessly integrated explanation answering the user's question.")
     explanation_depth: Literal["basic", "intermediate", "deep"]
@@ -369,9 +375,10 @@ class QualityCriticPayload(BaseModel):
 # ---------------------------------------------------------
 # AGENT 5: GUARDRAIL SCHEMAS
 # ---------------------------------------------------------
-class GuardrailDecision(BaseModel, extra="forbid"):
+class GuardrailDecision(BaseModel, extra="ignore"):
     classification: Literal["IN_BOUNDS", "METAPHOR_BRIDGE", "OFF_TOPIC_PIVOT", "CONVERSATIONAL_GREETING", "META_QUERY"]
     requires_deep_research: bool = Field(False, description="True if the user's question is highly complex and requires Agent 6 live search")
+    reasoning: Optional[str] = None
 
 # ---------------------------------------------------------
 # KNOWLEDGE GAP FAB SCHEMAS

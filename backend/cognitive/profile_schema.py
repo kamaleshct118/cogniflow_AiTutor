@@ -59,10 +59,17 @@ class PedagogicalSignal(BaseModel, extra="forbid"):
     observation_confidence: Literal["low", "medium", "high"]
     suggested_override: Optional[str] = None
 
+class StateMachineMutation(BaseModel, extra="forbid"):
+    mutation_type: Literal["add_friction_trigger", "add_resonance_pattern", "modify_execution_node"]
+    target: str
+    new_value: str
+    reasoning: str
+
 class CognitiveValidationPayload(BaseModel, extra="forbid"):
     probe_response_status: Literal["ANSWERED", "PARTIALLY_ANSWERED", "NOT_ANSWERING_PROBE"] = "NOT_ANSWERING_PROBE"
     content_gap: ContentGap
     pedagogical_signal: Optional[PedagogicalSignal] = None
+    state_machine_mutation: Optional[StateMachineMutation] = Field(None, description="Dynamic updates to the user's Cognitive State Machine if their reaction proves the current AST is flawed.")
 
 class CognitiveEvent(BaseModel, extra="forbid"):
     event_id: str

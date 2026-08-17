@@ -17,9 +17,18 @@
 """
 
 import os
+import sys
 import json
 import logging
 import uvicorn
+
+# Fix Windows console emoji printing error
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
@@ -150,6 +159,8 @@ async def calibrate_user(request: CalibrationRequest):
     print("="*60)
     try:
         profile = await run_in_threadpool(live_agent_1_mapper, request.modal_text)
+        if isinstance(profile, dict):
+            profile["modal_text"] = request.modal_text
         save_persisted_profile(profile)
         print(" 🗺️  [AGENT 1 - MAPPER] Full Extracted Cognitive Profile JSON (Saved to Disk):")
         print(json.dumps(profile, indent=2))
@@ -158,6 +169,21 @@ async def calibrate_user(request: CalibrationRequest):
     except Exception as e:
         logger.error(f"Error in /calibrate: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+class UpdateProfileRequest(BaseModel):
+    cognitive_profile: Dict[str, Any]
+
+@app.put("/calibrate")
+async def update_cognitive_profile(request: UpdateProfileRequest):
+    """
+    Updates the persisted cognitive profile JSON on disk.
+    """
+    print("\n" + "="*60)
+    print(" ✏️  [PUT /calibrate] Cognitive Profile Manual Update Requested")
+    save_persisted_profile(request.cognitive_profile)
+    print("   ✅ Updated cognitive_profile.json on disk")
+    print("="*60 + "\n")
+    return {"status": "success", "cognitive_profile": request.cognitive_profile}
 
 @app.delete("/calibrate")
 async def delete_cognitive_profile():
@@ -286,7 +312,7 @@ async def chat(request: ChatRequest, background_tasks: BackgroundTasks):
             raise HTTPException(status_code=400, detail="Session state not found. Call /session/start first.")
             
         # Update cognitive profile in the session state if provided in the chat request
-        if request.cognitive_profile and "tutor_directive" in request.cognitive_profile:
+        if request.cognitive_profile and ("cognitive_state_machine" in request.cognitive_profile or "reverse_engineered_model" in request.cognitive_profile or "tutor_directive" in request.cognitive_profile):
             print(" 🧠 [STATE SYNCHRONIZATION] Updating session state with client's active Cognitive Profile")
             await run_in_threadpool(
                 syntapse_app.update_state,

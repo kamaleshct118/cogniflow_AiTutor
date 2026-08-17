@@ -42,43 +42,43 @@ def get_next_tavily_key():
     return key
 
 # =====================================================================
-# LLM MODEL HIERARCHY & LOAD BALANCING
+# LLM MODEL HIERARCHY & DIRECT FALLBACK ARCHITECTURE
 # =====================================================================
-# Distributing API keys and Model weights to prevent token rate-limiting
-# and optimize latency/cost.
-# Heavy Load -> Groq Llama 3.3 70B
-# Medium Load -> Groq Llama 3.3 70B
-# Fast/Light Load -> NVIDIA NIM (Llama 3.1 8B Instruct)
+# Primary LLM Endpoint  : Groq Network ("openai/gpt-oss-120b")
+# Direct Fallback Endpoint: NVIDIA NIM ("nvidia/nemotron-3.5-lightning-30b-a3b")
 # =====================================================================
 
-# --- AGENT 1: COGNITIVE MAPPER (HEAVY LOAD) ---
-# Purpose: Deep psychometric analysis
-MODEL_1_MAPPER_NAME = "llama-3.3-70b-versatile" # Groq Network
+# --- AGENT 1: COGNITIVE MAPPER ---
+# MODEL_1_MAPPER_NAME = "llama-3.3-70b-versatile"
+MODEL_1_MAPPER_NAME = "openai/gpt-oss-120b" # Groq Network
 MODEL_1_MAPPER_KEY = os.getenv("MODEL_1_MAPPER_KEY")
 
-# --- AGENT 2: WAVELENGTH SETTER (MID LOAD) ---
-# Purpose: Fast JSON API configurations
-MODEL_2_WAVELENGTH_NAME = "llama-3.3-70b-versatile" # Groq Network
+# --- AGENT 2: WAVELENGTH SETTER ---
+# MODEL_2_WAVELENGTH_NAME = "llama-3.3-70b-versatile"
+MODEL_2_WAVELENGTH_NAME = "openai/gpt-oss-120b" # Groq Network
 MODEL_2_WAVELENGTH_KEY = os.getenv("MODEL_2_WAVELENGTH_KEY")
 
-# --- AGENT 3: GAP ANALYZER (LIGHTWEIGHT) ---
-# Purpose: FAB Logic and History diffing
-MODEL_3_GAP_ANALYZER_NAME = "meta/llama-3.1-8b-instruct" # NVIDIA NIM Network
+# --- AGENT 3: GAP ANALYZER ---
+MODEL_3_GAP_ANALYZER_NAME = "openai/gpt-oss-120b" # Groq Network
 MODEL_3_GAP_ANALYZER_KEY = os.getenv("MODEL_3_GAP_ANALYZER_KEY")
 
-# --- AGENT 4: TEACHER / TUTOR (MID LOAD) ---
-# Purpose: Pedagogical synthesis and context management
-MODEL_4_TEACHER_NAME = "llama-3.3-70b-versatile" # Groq Network
+# --- AGENT 3C: QUALITY CRITIC ---
+MODEL_3C_QUALITY_CRITIC_NAME = "openai/gpt-oss-120b" # Groq Network
+MODEL_3C_QUALITY_CRITIC_KEY = os.getenv("MODEL_3C_QUALITY_CRITIC_KEY")
+
+# --- AGENT 4: TEACHER / TUTOR ---
+# MODEL_4_TEACHER_NAME = "llama-3.3-70b-versatile"
+MODEL_4_TEACHER_NAME = "openai/gpt-oss-120b" # Groq Network
 MODEL_4_TEACHER_KEY = os.getenv("MODEL_4_TEACHER_KEY")
 
-# --- AGENT 5: GUARDRAIL (LIGHTWEIGHT) ---
-# Purpose: Pre-flight security check on every user message
-MODEL_5_GUARDRAIL_NAME = "llama-3.3-70b-versatile" # Groq Network
+# --- AGENT 5: GUARDRAIL ---
+# MODEL_5_GUARDRAIL_NAME = "llama-3.3-70b-versatile"
+MODEL_5_GUARDRAIL_NAME = "openai/gpt-oss-120b" # Groq Network
 MODEL_5_GUARDRAIL_KEY = os.getenv("MODEL_5_GUARDRAIL_KEY")
 
-# --- AGENT 6: AUTO-LIBRARIAN (LIGHTWEIGHT) ---
-# Purpose: Extracting JSON facts from Tavily HTML scrapes
-MODEL_6_RESEARCHER_NAME = "meta/llama-3.1-8b-instruct"
+# --- AGENT 6: AUTO-LIBRARIAN ---
+# MODEL_6_RESEARCHER_NAME = "llama-3.3-70b-versatile"
+MODEL_6_RESEARCHER_NAME = "openai/gpt-oss-120b" # Groq Network
 MODEL_6_RESEARCHER_KEY = os.getenv("MODEL_6_RESEARCHER_KEY")
 
 # =====================================================================
